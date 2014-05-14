@@ -48,11 +48,37 @@ extern return_type make_remote_call(const char *servernameorip,
     serv_addr.sin_addr.s_addr = inet_addr(servernameorip);
 
     //int inet_pton(int af, const char *src, void *dst);
-    if(inet_pton(PF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) {
+    if(inet_pton(PF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
         printf("\n inet_pton error occured\n");
         return ret;
     } 
 
+    //NOTE: checkout bind() 
+
+    struct proc_def proc;
+    proc.proc_name = procedure_name;
+    proc.params = nparams;
+
+    char sendbuffer[1025];
+
+    assert(sizeof proc <= sizeof sendbuffer);
+   	memcpy(&proc, sendbuffer, sizeof proc);
+
+   	//checkout: http://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
+
+   	//CLIENT:
+	   	//socket()
+	   	//bind()
+	    //sendto()		/* to server */
+
+   	//SERVER:
+   		//socket()
+   		//bind() 		/* mybind() */
+   		//recvfrom() 	/* blocking */
+   		//(*fp)()
+   		//sendto() 		/* to client */
+
+    /*
 	//connect to server
 	//connect(int socket, const struct sockaddr *address,socklen_t address_len);
     if(connect(socketfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
@@ -86,6 +112,7 @@ extern return_type make_remote_call(const char *servernameorip,
 	if(n < 0) {
 		printf("\n Read error \n");
 	}
+	*/
 
 	//extract from recvbuffer and format into the type 'return_type' -> can be done after implementing transport on server
 
