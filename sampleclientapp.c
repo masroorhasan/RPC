@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include "ece454rpc_types.h"
-
+#include "mybind.c"
 
 //using socket API
+#include <sys/types.h>
 #include <sys/socket.h>
 
 //to use sockaddr_in struct
 #include <netinet/in.h>
+#include <netdb.h>
 
 #include <assert.h>
 
@@ -34,38 +36,21 @@ extern return_type make_remote_call(const char *servernameorip,
 	 * man 7 ip
 	 */
 	int socketfd = socket(PF_INET, SOCK_DGRAM, 0); 
-
 	if(socketfd == -1) {
 		perror("cannot create socket");
 		return ret;
 	}
 
-	struct sockaddr_in serv_addr;
+	struct sockaddr_in my_addr;
+	memset((char *)&my_addr, 0, sizeof(my_addr));
+    my_addr.sin_family = PF_INET;
+    my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
+    if(mybind(socketfd, (struct sockaddr_in*)&my_addr) < 0 ) {
+    	perror("could not bind");
+		return ret;	
+    }
 
-	//define domain, address and port to send rpc to
-	memset(&serv_addr, '0', sizeof(serv_addr)); 
-
-    serv_addr.sin_family = PF_INET;
-    serv_addr.sin_port = serverportnumber; 
-    serv_addr.sin_addr.s_addr = inet_addr(servernameorip);
-
-    //int inet_pton(int af, const char *src, void *dst);
-    if(inet_pton(PF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
-        printf("\n inet_pton error occured\n");
-        return ret;
-    } 
-
-    //NOTE: checkout bind() 
-
-    struct proc_def proc;
-    proc.proc_name = procedure_name;
-    proc.params = nparams;
-
-    char sendbuffer[1025];
-
-    assert(sizeof proc <= sizeof sendbuffer);
-   	memcpy(&proc, sendbuffer, sizeof proc);
 
    	//checkout: http://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
 
@@ -81,15 +66,21 @@ extern return_type make_remote_call(const char *servernameorip,
    		//(*fp)()
    		//sendto() 		/* to client */
 
-    /*
-	//connect to server
-	//connect(int socket, const struct sockaddr *address,socklen_t address_len);
-    if(connect(socketfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-       printf("\n Error : Connect Failed \n");
-       return ret;
-    } 
+    //might have to use struct hostent for using gethostbyname procedure
+    struct hostent *hp;     		//host information
+    struct sockaddr_in servaddr;	//server address
 
-    //write() to server, send the name and params and procedure to invoke on server
+    memset((char *)&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(serverportnumber);
+
+    //look up address of server given its name
+    hp = gethostbyname(servernameorip);
+    if(!hp){
+    	perror("could not obtain server address");
+		return ret;	
+    }
+
     struct proc_def proc;
     proc.proc_name = procedure_name;
     proc.params = nparams;
@@ -98,24 +89,16 @@ extern return_type make_remote_call(const char *servernameorip,
 
     assert(sizeof proc <= sizeof sendbuffer);
    	memcpy(&proc, sendbuffer, sizeof proc);
-    
-    
-    write(socketfd, sendbuffer, strlen(sendbuffer));
 
-	//read() from server, read what server sent back as a result of invoking the procedure 
-	int n;
-	char recvbuffer[1025];
-	while((n = read(socketfd, recvbuffer, sizeof(recvbuffer))) > 0) {
-		recvbuffer[n] = 0;
-		if(fputs(recvbuffer, stdout) == EOF){
-			printf("\n fputs error \n");
-		}
-	}
+    //put host's address into serv address structure
+    memcpy((void *)&servaddr.sin_addr, hp->h_addr_list[0], hp->h_length);
 
-	if(n < 0) {
-		printf("\n Read error \n");
-	}
-	*/
+    //send msg to server
+    if(sendto(socketfd, (char *)&sendbuffer, strlen(sendbuffer), 0, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0){
+    	perror("sendto failed");
+    	return ret;
+    }
+
 
 	//extract from recvbuffer and format into the type 'return_type' -> can be done after implementing transport on server
 
