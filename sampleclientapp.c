@@ -19,26 +19,29 @@ extern return_type make_remote_call(const char *servernameorip,
 	                            	const int serverportnumber,
 	                            	const char *procedure_name,
 	                            	const int nparams,
-				    				...)
-{
+				    				...) {
 
-	void *val = NULL;
-	int size = NULL; 
+
+	// Result of making remote call
+	void *val;
+	int size;
 	return_type ret = {val,size};
 
-	//build transport here
-	//translate call to a network message
-	//using UDP, socket() -- man 2 socket, for socket API
-	int socketfd; 
-	struct sockaddr_in serv_addr;
+	/**
+	 * Setup a UDP datagram socket.
+	 *
+	 * man 2 socket
+	 * man 7 ip
+	 */
+	int socketfd = socket(PF_INET, SOCK_DGRAM, 0); 
 
-	//socket(domain, type, protocol)
-	//domain: PF_INET (IP)
-	//type: SOCK_DGRAM (datagram service)
-	if(socketfd = socket(PF_INET, SOCK_DGRAM, 0) < 0){
+	if(socketfd == -1) {
 		perror("cannot create socket");
 		return ret;
 	}
+
+	struct sockaddr_in serv_addr;
+
 
 	//define domain, address and port to send rpc to
 	memset(&serv_addr, '0', sizeof(serv_addr)); 
