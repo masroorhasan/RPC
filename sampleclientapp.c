@@ -16,17 +16,11 @@
 #include <string.h>
 #include <stdarg.h>
 
-
-struct proc_params {
-  void *param;
-  size_t param_size;
-};
-
-struct proc_def {
+struct {
 	char *proc_name;
 	int num_params;
-  struct proc_params params[10];
-};
+  arg_type arguments;
+} proc_dec_type;
 
 void paddr(unsigned char *a) {
     printf("%d.%d.%d.%d\n", a[0], a[1], a[2], a[3]);
@@ -89,18 +83,22 @@ extern return_type make_remote_call(const char *servernameorip,
 		  return ret;	
     }
 
-    struct proc_def proc;
+    proc_dec_type proc;
     proc.proc_name = procedure_name;
     proc.num_params = nparams;
+    proc.arguments = NULL;
+
+    arg_type list;
 
     va_list valist;
-    va_start(valist, nparams);
+    va_start(valist, nparams*2);
 
     for(int i = 0; i < nparams*2; i++){
       if(i%2 != 0){
-        proc.params[i].param_size = va_arg(valist, size_t);
+        proc.arguments.arg_size = va_arg(valist, int);
       } else {
-        proc.params[i].param = va_arg(valist, void*);
+        proc.arguments.arg_val = va_arg(valist, void*);
+
       }
     }
 
