@@ -13,10 +13,18 @@
 
 // memset
 #include <string.h>
+#include <stdarg.h>
+
+
+struct proc_params {
+  void *param;
+  size_t param_size;
+};
 
 struct proc_def {
 	char *proc_name;
-	int params;
+	int num_params;
+  struct proc_params params[10];
 };
 
 extern return_type make_remote_call(const char *servernameorip,
@@ -46,13 +54,14 @@ extern return_type make_remote_call(const char *servernameorip,
 
 	// Fill a byte string with a byte value
 	memset((char *)&my_addr, 0, sizeof(my_addr));
-    my_addr.sin_family = PF_INET;
-    my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if(mybind(socketfd, (struct sockaddr_in*)&my_addr) < 0 ) {
-    	perror("Could't bind.");
+  my_addr.sin_family = AF_INET;
+  my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+  if(mybind(socketfd, (struct sockaddr_in*)&my_addr) < 0 ) {
+  	perror("Could't bind.");
 		return ret;	
-    }
+  }
 
 
    	//checkout: http://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
@@ -81,12 +90,23 @@ extern return_type make_remote_call(const char *servernameorip,
     hp = gethostbyname(servernameorip);
     if(!hp){
     	perror("could not obtain server address");
-		return ret;	
+		  return ret;	
     }
 
     struct proc_def proc;
     proc.proc_name = procedure_name;
-    proc.params = nparams;
+    proc.num_params = nparams;
+
+    va_list valist;
+    va_start(valist, nparams);
+
+    for(int i = 0; i < nparams*2; i++){
+      if(i%2 != 0){
+        proc.params[i].param_size = va_arg(valist, size_t);
+      } else {
+        proc.params[i].param = va_arg(valist, void*);
+      }
+    }
 
     char sendbuffer[1025];
 
@@ -112,9 +132,9 @@ extern return_type make_remote_call(const char *servernameorip,
 int main()
 {
     int a = -10, b = 20;
-    return_type ans = make_remote_call("exelinux3.uwaterloo.ca",
+    return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
 	                               5673,
-				       				"addtwo", 2,
+				       				           "addtwo", 2,
 	                               sizeof(int), (void *)(&a),
 	                               sizeof(int), (void *)(&b));
     int i = *(int *)(ans.return_val);

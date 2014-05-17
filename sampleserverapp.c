@@ -4,6 +4,17 @@
 int ret_int;
 return_type r;
 
+//database of function pointers
+struct proc_map {
+    char *proc_name;
+    fp_type fp;
+};
+
+#define TABLE_SIZE 10
+
+struct proc_map proc_table[TABLE_SIZE];
+int index_to_insert = 0;
+
 return_type add(const int nparams, arg_type* a)
 {
     if(nparams != 2) {
@@ -40,7 +51,19 @@ extern bool register_procedure(const char *procedure_name,
 {
     //define array (db) to store fp's
     //put procedure_name as fp in an array of fp's
-    return false;
+    if(procedure_name == NULL) return false;
+    if(nparams < 2) return false;   
+    if(index_to_insert > TABLE_SIZE) return false;
+
+    //register function in proc_table
+    //db looked up by name, i.e. procedure_name
+
+    proc_table[index_to_insert].proc_name = procedure_name;
+    proc_table[index_to_insert].fp = fnpointer;
+
+    index_to_insert += 1;
+
+    return true;
 }
 
 /* launch_server() -- used by the app programmer's server code to indicate that
@@ -48,9 +71,12 @@ extern bool register_procedure(const char *procedure_name,
  * with the server stub. */
 void launch_server() 
 {
-    while(1){
-        //service client requests
-    }
+    //look up 'database' of all functions that are registered in it and,
+    //invoke the appropriate application procedure
+
+    // while(1){
+    //     //service client requests
+    // }
 }
 
 int main() {
