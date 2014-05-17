@@ -1,16 +1,18 @@
 #include <stdio.h>
 #include "ece454rpc_types.h"
 #include "mybind.c"
+#include <assert.h>
 
-//using socket API
+// Socket API
 #include <sys/types.h>
 #include <sys/socket.h>
 
-//to use sockaddr_in struct
+// Struct sockaddr_in 
 #include <netinet/in.h>
 #include <netdb.h>
 
-#include <assert.h>
+// memset
+#include <string.h>
 
 struct proc_def {
 	char *proc_name;
@@ -23,31 +25,32 @@ extern return_type make_remote_call(const char *servernameorip,
 	                            	const int nparams,
 				    				            ...) {
 
-
-	// Result of making remote call
+	// Result of making remote procedure call
 	void *val;
 	int size;
 	return_type ret = {val,size};
 
 	/**
 	 * Setup a UDP datagram socket.
-	 *
 	 * man 2 socket
 	 * man 7 ip
 	 */
 	int socketfd = socket(PF_INET, SOCK_DGRAM, 0); 
 	if(socketfd == -1) {
-		perror("cannot create socket");
+		perror("Can't create socket.");
 		return ret;
 	}
 
+
 	struct sockaddr_in my_addr;
+
+	// Fill a byte string with a byte value
 	memset((char *)&my_addr, 0, sizeof(my_addr));
     my_addr.sin_family = PF_INET;
     my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     if(mybind(socketfd, (struct sockaddr_in*)&my_addr) < 0 ) {
-    	perror("could not bind");
+    	perror("Could't bind.");
 		return ret;	
     }
 
