@@ -1,20 +1,23 @@
+/**
+ * Sources:
+ * http://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
+ */
+
 #include <stdio.h>
+#include <stdlib.h>
 #include "ece454rpc_types.h"
 #include "mybind.c"
 
-#define BUFSIZE 2048
-
-// Socket API
+// Socket
 #include <sys/types.h>
 #include <sys/socket.h>
-
-// Struct sockaddr_in 
 #include <netinet/in.h>
 #include <netdb.h>
-#include <inttypes.h>
 
 // memset
 #include <string.h>
+
+#define BUFSIZE 2048
 
 int ret_int;
 return_type r;
@@ -29,8 +32,47 @@ struct proc_map {
 struct proc_map proc_table[TABLE_SIZE];
 int index_to_insert = 0;
 
+/**
+ * Prints an IP address in dotted decimal notation.
+ */
 void paddr(unsigned char *a) {
-	printf("%d.%d.%d.%d\n", a[0], a[1], a[2], a[3]);
+    printf("%d.%d.%d.%d\n", a[0], a[1], a[2], a[3]);
+}
+
+/**
+ * Creates a socket.
+ */
+int createSocket(const int domain, const int type, const int protocol) {
+
+    int socketDescriptor = socket(domain, type, protocol);
+    
+    if (socketDescriptor == -1) {
+        perror("Failed to create socket.");
+        exit(0);
+    }
+
+    printf("Created socket.\n");
+    return socketDescriptor;
+}
+
+/**
+ * Assigns socket an IP address and random port.
+ */
+void bindSocket(int *socket) {
+
+    struct sockaddr_in myAddress;
+    
+    // Let OS pick what IP address is assigned
+    myAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    myAddress.sin_family = AF_INET;
+
+    // Assign port
+    if(mybind(*socket, (struct sockaddr_in*)&myAddress) < 0 ) {
+        perror("Could't bind port to socket.");
+        exit(0);
+    }
+
+    printf("Binded socket to port: %i \n", ntohs(myAddress.sin_port));
 }
 
 return_type add(const int nparams, arg_type* a)
@@ -88,55 +130,34 @@ extern bool register_procedure(const char *procedure_name,
  * it wants start receiving rpc invocations for functions that it registered
  * with the server stub. */
 void launch_server() {        
-    struct sockaddr_in myaddr;      /* our address */
-        struct sockaddr_in remaddr;     /* remote address */
-        socklen_t addrlen = sizeof(remaddr);            /* length of addresses */
-        int recvlen;                    /* # bytes received */
-        int fd;                         /* our socket */
-        unsigned char buf[BUFSIZE];     /* receive buffer */
 
-        /* create a UDP socket */
+    int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
+    bindSocket(&socket);
 
-    if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("cannot create socket\n");
-        return;
-    }
+    struct sockaddr_in remoteAddress;
+    socklen_t remoteAddressLength = sizeof(remoteAddress);           
+    
+    unsigned char receiveBuffer[BUFSIZE];               
+    int receivedSize;                              
 
-    /* bind the socket to any valid IP address and a specific port */
-    memset((char *)&myaddr, 0, sizeof(myaddr));
-    myaddr.sin_family = AF_INET;
-    myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    //myaddr.sin_port = htons(PORT);
-
-
-    if(mybind(fd, (struct sockaddr_in*)&myaddr) < 0 ) {
-        perror("Server couldn't bind port to socket.");
-        return; 
-    }
-
-    printf("Server binded socket to port: %i \n", ntohs(myaddr.sin_port));
-
-
-    /* now loop, receiving data and printing what we received */
     for (;;) {
-        printf("waiting on port %d\n", ntohs(myaddr.sin_port));
-        recvlen = recvfrom(fd, buf, BUFSIZE, 0, (struct sockaddr *)&remaddr, &addrlen);
-        printf("received %d bytes\n", recvlen);
-        if (recvlen > 0) {
-            buf[recvlen] = 0;
-            printf("received message: \"%s\"\n", buf);
+        receivedSize = recvfrom(socket, receiveBuffer, BUFSIZE,
+            0, (struct sockaddr *)&remoteAddress, &remoteAddressLength);
+        
+        printf("Received %d bytes\n", receivedSize);
+        
+        if (receivedSize > 0) {
+            receiveBuffer[receivedSize] = 0;
+            printf("Received Message: \"%s\"\n", receiveBuffer);
         }
     }
-        /* never exits */
+        
 }
 
 int main() {
     register_procedure("addtwo", 2, add);
 
     launch_server();
-
-    /* should never get here, because
-       launch_server(); runs forever. */
 
     return 0;
 }
