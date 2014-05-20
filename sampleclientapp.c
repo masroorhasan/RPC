@@ -1,139 +1,135 @@
+/**
+ * Sources:
+ * http://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
+ */
+
 #include <stdio.h>
-#include "ece454rpc_types.h"
-#include "mybind.c"
+#include <stdlib.h>
 #include <assert.h>
+#include "mybind.c"
+#include "ece454rpc_types.h"
 
-// Socket API
-#include <sys/types.h>
+// Socket
 #include <sys/socket.h>
-
-// Struct sockaddr_in 
 #include <netinet/in.h>
+#include <sys/types.h>
 #include <netdb.h>
-#include <inttypes.h>
 
-// memset
+// memcpy
 #include <string.h>
-#include <stdarg.h>
 
-struct {
-	char *proc_name;
-	int num_params;
-  arg_type arguments;
+typedef struct {
+    char *proc_name;
+    int num_params;
+    arg_type arguments;
 } proc_dec_type;
 
+/**
+ * Printing an IP address in dotted decimal notation.
+ */
 void paddr(unsigned char *a) {
     printf("%d.%d.%d.%d\n", a[0], a[1], a[2], a[3]);
 }
 
 /**
- * Sources:
- * http://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
+ * Creates a socket.
  */
-extern return_type make_remote_call(const char *servernameorip,
-	                            	const int serverportnumber,
-	                            	const char *procedure_name,
-	                            	const int nparams,
-				    				            ...) {
+int createSocket(const int domain, const int type, const int protocol) {
 
-	// Result of making remote procedure call
-	void *val;
-	int size;
-	return_type ret = {val,size};
-
-	/**
-	 * Setup a UDP datagram socket.
-	 * man 2 socket
-	 * man 7 ip
-	 */
-	int socketfd = socket(AF_INET, SOCK_DGRAM, 0); 
-	if(socketfd == -1) {
-		perror("Can't create socket.");
-		return ret;
-	}
-	
-	struct sockaddr_in my_addr;
-	memset((char *)&my_addr, 0, sizeof(my_addr));
-
-  my_addr.sin_family = AF_INET;
-  my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    if(mybind(socketfd, (struct sockaddr_in*)&my_addr) < 0 ) {
-    	perror("Could't bind port to socket.");
-		  return ret;	
-  }
-
-    printf("Client binded socket to port: %i \n", ntohs(my_addr.sin_port));
-
-
-    // Used to retrieve IP address of the server given its name
-    struct hostent *hp;     		
-    struct sockaddr_in servaddr;
-    char *my_message = "Test message.";
+    int socketDescriptor = socket(domain, type, protocol);
     
-    memset((char *)&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(serverportnumber);
-
-    // Look up address of server given its name
-    hp = gethostbyname(servernameorip);
-
-    if(!hp){
-    	perror("could not obtain server address");
-		  return ret;	
+    if (socketDescriptor == -1) {
+        perror("Failed to create socket.");
+        exit(0);
     }
 
-    proc_dec_type proc;
-    proc.proc_name = procedure_name;
-    proc.num_params = nparams;
-    proc.arguments = NULL;
+    printf("Created socket.\n");
+    return socketDescriptor;
+}
 
-    arg_type list;
+/**
+ * Assigns socket an IP address and random port.
+ */
+void bindSocket(int *socket) {
 
-    va_list valist;
-    va_start(valist, nparams*2);
+    struct sockaddr_in myAddress;
+    
+    // Let OS pick what IP address is assigned
+    myAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    myAddress.sin_family = AF_INET;
 
-    for(int i = 0; i < nparams*2; i++){
-      if(i%2 != 0){
-        proc.arguments.arg_size = va_arg(valist, int);
-      } else {
-        proc.arguments.arg_val = va_arg(valist, void*);
-
-      }
+    // Assign port
+    if(mybind(*socket, (struct sockaddr_in*)&myAddress) < 0 ) {
+        perror("Could't bind port to socket.");
+        exit(0);
     }
 
-    char sendbuffer[1025];
+    printf("Binded socket to port: %i \n", ntohs(myAddress.sin_port));
+}
 
-    assert(sizeof proc <= sizeof sendbuffer);
-   	memcpy(&proc, sendbuffer, sizeof proc);
+struct hostent* getServerDetails(const char *serverNameOrIP) {
+    
+    struct hostent *host;
+    host = gethostbyname(serverNameOrIP);
+    if (!host) {
+        fprintf(stderr, "Could not obtain IP address for %s\n", serverNameOrIP);      
+    }
 
-    //put host's address into serv address structure
-    memcpy((void *)&servaddr.sin_addr, hp->h_addr_list[0], hp->h_length);
+    printf("The IP address of %s is: ", serverNameOrIP);
+    paddr((unsigned char*) host->h_addr_list[0]);
 
-  	printf("Server destination port: %i \n", ntohs(servaddr.sin_port));
-  	printf("Server destination ip: ");
-  	paddr((unsigned char*) hp->h_addr_list[0]);
+    return host;
+}
 
-    if(sendto(socketfd, my_message, strlen(my_message), 0, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0){
-    	perror("Send to server failed.");
-    	return ret;
+extern return_type make_remote_call(const char *servernameorip,
+  const int serverportnumber,
+  const char *procedure_name,
+  const int nparams,
+  ...) {
+
+    // Result of make remote call
+    void *val;
+    int size;
+    return_type ret = {val,size};
+
+    // Create client socket
+    int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
+    bindSocket(&socket);
+    
+    // Create server address
+    struct sockaddr_in serverAddress;
+    memset((char*)&serverAddress, 0, sizeof(serverAddress));
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_port = htons(serverportnumber);
+    struct hostent * serverLookup = getServerDetails(servernameorip); // TODO: Check if IP address or server name
+    memcpy((void *)&serverAddress.sin_addr, serverLookup->h_addr_list[0], serverLookup->h_length);
+    
+    // TO DO: Serialize data in char * instead of a simple message
+    char *message = "Test Message.";
+
+    // Send message to server
+    if (sendto(socket, message, strlen(message),
+      0, (struct sockaddr *)&serverAddress,
+      sizeof(serverAddress)) < 0) {
+        perror("Failed to send message.");
     }
 
     printf("Program execution complete. \n");
-	  return ret;
+    
+    // TODO: Assign ret properly
+    return ret;
 }
 
-int main()
-{
+int main() {
     int a = -10, b = 20;
     return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
-	                               10000,
-				       				"addtwo", 2,
-	                               sizeof(int), (void *)(&a),
-	                               sizeof(int), (void *)(&b));
-    
-    int i = *(int *)(ans.return_val);
-    printf("client, got result: %d\n", i);
+      10000,
+      "addtwo", 2,
+      sizeof(int), (void *)(&a),
+      sizeof(int), (void *)(&b));
+
+    // int i = *(int *)(ans.return_val);
+    // printf("client, got result: %d\n", i);
 
     return 0;
 }
