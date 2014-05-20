@@ -25,7 +25,7 @@ typedef struct {
 } proc_dec_type;
 
 /**
- * Printing an IP address in dotted decimal notation.
+ * Prints an IP address in dotted decimal notation.
  */
 void paddr(unsigned char *a) {
     printf("%d.%d.%d.%d\n", a[0], a[1], a[2], a[3]);
@@ -67,15 +67,18 @@ void bindSocket(int *socket) {
     printf("Binded socket to port: %i \n", ntohs(myAddress.sin_port));
 }
 
-struct hostent* getServerDetails(const char *serverNameOrIP) {
+/**
+ * Fetches host details for a given IP address.
+ */
+struct hostent* getHostDetails(const char *ipAddress) {
     
     struct hostent *host;
-    host = gethostbyname(serverNameOrIP);
+    host = gethostbyname(ipAddress);
     if (!host) {
-        fprintf(stderr, "Could not obtain IP address for %s\n", serverNameOrIP);      
+        fprintf(stderr, "Could not obtain IP address for %s\n", ipAddress);      
     }
 
-    printf("The IP address of %s is: ", serverNameOrIP);
+    printf("The IP address of %s is: ", ipAddress);
     paddr((unsigned char*) host->h_addr_list[0]);
 
     return host;
@@ -96,16 +99,16 @@ extern return_type make_remote_call(const char *servernameorip,
     int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
     bindSocket(&socket);
     
-    // Create server address
+    // TODO: Serialize data instead of a simple message
+    char *message = "Test Message.";
+
+    // Create message destination address
     struct sockaddr_in serverAddress;
     memset((char*)&serverAddress, 0, sizeof(serverAddress));
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(serverportnumber);
-    struct hostent * serverLookup = getServerDetails(servernameorip); // TODO: Check if IP address or server name
+    struct hostent * serverLookup = getHostDetails(servernameorip); // TODO: Check if IP address or server name
     memcpy((void *)&serverAddress.sin_addr, serverLookup->h_addr_list[0], serverLookup->h_length);
-    
-    // TO DO: Serialize data in char * instead of a simple message
-    char *message = "Test Message.";
 
     // Send message to server
     if (sendto(socket, message, strlen(message),
