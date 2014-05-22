@@ -147,6 +147,7 @@ void launch_server() {
 
         if (receivedSize > 0) {
             receiveBuffer[receivedSize] = 0;
+            //deserialize rcvbuffer
             printf("Received Message: \"%s\"\n", receiveBuffer);
         }
     }
