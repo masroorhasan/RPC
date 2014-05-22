@@ -45,7 +45,7 @@ void paddr(unsigned char *a) {
 int createSocket(const int domain, const int type, const int protocol) {
 
     int socketDescriptor = socket(domain, type, protocol);
-    
+
     if (socketDescriptor == -1) {
         perror("Failed to create socket.");
         exit(0);
@@ -61,7 +61,7 @@ int createSocket(const int domain, const int type, const int protocol) {
 void bindSocket(int *socket) {
 
     struct sockaddr_in myAddress;
-    
+
     // Let OS pick what IP address is assigned
     myAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     myAddress.sin_family = AF_INET;
@@ -106,13 +106,13 @@ return_type add(const int nparams, arg_type* a)
 /* register_procedure() -- invoked by the app programmer's server code
  * to register a procedure with this server_stub. Note that more than
  * one procedure can be registered */
-extern bool register_procedure(const char *procedure_name, 
+extern bool register_procedure(const char *procedure_name,
                     const int nparams, fp_type fnpointer)
 {
     //define array (db) to store fp's
     //put procedure_name as fp in an array of fp's
     if(procedure_name == NULL) return false;
-    if(nparams < 2) return false;   
+    if(nparams < 2) return false;
     if(index_to_insert > TABLE_SIZE) return false;
 
     //register function in proc_table
@@ -129,29 +129,29 @@ extern bool register_procedure(const char *procedure_name,
 /* launch_server() -- used by the app programmer's server code to indicate that
  * it wants start receiving rpc invocations for functions that it registered
  * with the server stub. */
-void launch_server() {        
+void launch_server() {
 
     int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
     bindSocket(&socket);
 
     struct sockaddr_in remoteAddress;
-    socklen_t remoteAddressLength = sizeof(remoteAddress);           
-    
-    unsigned char receiveBuffer[BUFSIZE];               
-    int receivedSize;                              
+    socklen_t remoteAddressLength = sizeof(remoteAddress);
+
+    unsigned char receiveBuffer[BUFSIZE];
+    int receivedSize;
 
     for (;;) {
         receivedSize = recvfrom(socket, receiveBuffer, BUFSIZE,
             0, (struct sockaddr *)&remoteAddress, &remoteAddressLength);
-        
+
         printf("Received %d bytes\n", receivedSize);
-        
+
         if (receivedSize > 0) {
             receiveBuffer[receivedSize] = 0;
             printf("Received Message: \"%s\"\n", receiveBuffer);
         }
     }
-        
+
 }
 
 int main() {

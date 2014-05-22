@@ -40,7 +40,7 @@ void paddr(unsigned char *a) {
 int createSocket(const int domain, const int type, const int protocol) {
 
     int socketDescriptor = socket(domain, type, protocol);
-    
+
     if (socketDescriptor == -1) {
         perror("Failed to create socket.");
         exit(0);
@@ -56,7 +56,7 @@ int createSocket(const int domain, const int type, const int protocol) {
 void bindSocket(int *socket) {
 
     struct sockaddr_in myAddress;
-    
+
     // Let OS pick what IP address is assigned
     myAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     myAddress.sin_family = AF_INET;
@@ -74,11 +74,11 @@ void bindSocket(int *socket) {
  * Fetches host details for a given IP address.
  */
 struct hostent* getHostDetails(const char *ipAddress) {
-    
+
     struct hostent *host;
     host = gethostbyname(ipAddress);
     if (!host) {
-        fprintf(stderr, "Could not obtain IP address for %s\n", ipAddress);      
+        fprintf(stderr, "Could not obtain IP address for %s\n", ipAddress);
     }
 
     printf("The IP address of %s is: ", ipAddress);
@@ -99,10 +99,10 @@ int serializeData(char *procedure_name, int nparams, va_list valist, char *buffe
 
   memcpy(&buffer[i], &nparams, sizeof nparams);
   i += sizeof nparams;
-    
+
   struct arg ptr;
   struct arg list;
-  
+
   for(int i = 0; i < nparams*2; i++){
     if(i%2 == 0){
       ptr.arg_size = va_arg(valist, int);
@@ -135,7 +135,7 @@ extern return_type make_remote_call(const char *servernameorip,
     // Create client socket
     int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
     bindSocket(&socket);
-    
+
     // TODO: Serialize data instead of a simple message
     char *message = "Test Message.";
 
@@ -145,7 +145,7 @@ extern return_type make_remote_call(const char *servernameorip,
     buff_size += sizeof(int);
     buff_size += sizeof(arg_type);
 
-    unsigned char *buffer[buff_size]; 
+    unsigned char *buffer[buff_size];
 
     va_list valist;
     va_start(valist, nparams*2);
@@ -171,7 +171,7 @@ extern return_type make_remote_call(const char *servernameorip,
     }
 
     printf("Program execution complete. \n");
-    
+
     // TODO: Assign ret properly
     return ret;
 }
