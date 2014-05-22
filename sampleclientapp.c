@@ -89,17 +89,17 @@ struct hostent* getHostDetails(const char *ipAddress) {
 }
 
 int serializeData(char *procedure_name, int nparams, va_list valist, char *buffer ) {
-  size_t i = 0;
+  size_t idx = 0;
   int proc_size = strlen(procedure_name);
 
-  memcpy(&buffer[i], &proc_size, sizeof proc_size);
-  i += sizeof proc_size;
+  memcpy(&buffer[idx], &proc_size, sizeof proc_size);
+  idx += sizeof proc_size;
 
-  memcpy(&buffer[i], &procedure_name, sizeof procedure_name);
-  i += sizeof procedure_name;
+  memcpy(&buffer[idx], &procedure_name, sizeof procedure_name);
+  idx += sizeof procedure_name;
 
-  memcpy(&buffer[i], &nparams, sizeof nparams);
-  i += sizeof nparams;
+  memcpy(&buffer[idx], &nparams, sizeof nparams);
+  idx += sizeof nparams;
 
   struct arg ptr;
   struct arg list;
@@ -116,10 +116,10 @@ int serializeData(char *procedure_name, int nparams, va_list valist, char *buffe
   }
 
 
-  memcpy(&buffer[i], &list, sizeof list);
-  i += sizeof list;
+  memcpy(&buffer[idx], &list, sizeof list);
+  idx += sizeof list;
 
-  return i;
+  return idx;
 }
 
 extern return_type make_remote_call(const char *servernameorip,
