@@ -18,6 +18,9 @@
 // memcpy
 #include <string.h>
 
+// variable arguments
+#include <stdarg.h>
+
 typedef struct {
     char *proc_name;
     int num_params;
@@ -84,6 +87,40 @@ struct hostent* getHostDetails(const char *ipAddress) {
     return host;
 }
 
+int serializeData(char *procedure_name, int nparams, va_list valist, char *buffer ) {
+  size_t i = 0;
+  int proc_size = strlen(procedure_name);
+
+  memcpy(&buffer[i], &proc_size, sizeof proc_size);
+  i += sizeof proc_size;
+
+  memcpy(&buffer[i], &procedure_name, sizeof procedure_name);
+  i += sizeof procedure_name;
+
+  memcpy(&buffer[i], &nparams, sizeof nparams);
+  i += sizeof nparams;
+    
+  struct arg ptr;
+  struct arg list;
+  
+  for(int i = 0; i < nparams*2; i++){
+    if(i%2 == 0){
+      ptr.arg_size = va_arg(valist, int);
+    } else {
+      ptr.arg_val = va_arg(valist, void*);
+      printf("val: %i \n", *(int *)(ptr.arg_val));
+      list.next = &ptr;
+      list = ptr;
+    }
+  }
+
+
+  memcpy(&buffer[i], &list, sizeof list);
+  i += sizeof list;
+
+  return i;
+}
+
 extern return_type make_remote_call(const char *servernameorip,
   const int serverportnumber,
   const char *procedure_name,
@@ -102,6 +139,22 @@ extern return_type make_remote_call(const char *servernameorip,
     // TODO: Serialize data instead of a simple message
     char *message = "Test Message.";
 
+    //serialized data processing
+    int buff_size = sizeof(int);
+    buff_size += sizeof procedure_name;
+    buff_size += sizeof(int);
+    buff_size += sizeof(arg_type);
+
+    unsigned char *buffer[buff_size]; 
+
+    va_list valist;
+    va_start(valist, nparams*2);
+
+    // printf("before memcpy: %lu \n", sizeof(buffer));
+    int buffer_data_size = serializeData(procedure_name, nparams, valist, buffer);
+    // printf("after memcpy: %lu \n", sizeof(buffer));
+
+
     // Create message destination address
     struct sockaddr_in serverAddress;
     memset((char*)&serverAddress, 0, sizeof(serverAddress));
@@ -111,7 +164,7 @@ extern return_type make_remote_call(const char *servernameorip,
     memcpy((void *)&serverAddress.sin_addr, serverLookup->h_addr_list[0], serverLookup->h_length);
 
     // Send message to server
-    if (sendto(socket, message, strlen(message),
+    if (sendto(socket, buffer, buffer_data_size,
       0, (struct sockaddr *)&serverAddress,
       sizeof(serverAddress)) < 0) {
         perror("Failed to send message.");
