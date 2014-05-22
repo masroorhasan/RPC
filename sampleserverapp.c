@@ -64,8 +64,7 @@ void bindSocket(int *socket) {
 
     // Let OS pick what IP address is assigned
     myAddress.sin_family = AF_INET;
-    myAddress.sin_port = 0;
-    
+	myAddress.sin_port = 0;
     // Assign port
     if(mybind(*socket, (struct sockaddr_in*)&myAddress) < 0 ) {
         perror("Could't bind port to socket.");
