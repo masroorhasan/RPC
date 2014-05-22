@@ -63,7 +63,6 @@ void bindSocket(int *socket) {
     struct sockaddr_in myAddress;
 
     // Let OS pick what IP address is assigned
-    myAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     myAddress.sin_family = AF_INET;
 
     // Assign port
