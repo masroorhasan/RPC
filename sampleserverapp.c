@@ -149,7 +149,7 @@ void launch_server() {
             receiveBuffer[receivedSize] = 0;
             printf("Received Message: \"%s\"\n", receiveBuffer);
             // Send message back to client
-            sendto(socket, receiveBuffer, strlen(receiveBuffer), 0, (struct sockaddr *)&remoteAddress, remoteAddressLength);
+            sendto(socket, "Warren",  strlen("Warren"), 0, (struct sockaddr *)&remoteAddress, remoteAddressLength);
         }
     }
 

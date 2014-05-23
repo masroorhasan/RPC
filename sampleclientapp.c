@@ -180,9 +180,13 @@ extern return_type make_remote_call(const char *servernameorip,
     int receivedMessage = recvfrom(socket, buffer, buffer_data_size,
       0, (struct sockaddr *)&serverAddress,
         &lengthOfServerAddress);
-    printf("Received %d bytes\n", receivedMessage);
 
-    // TODO: Unpack data and set ret
+		// Print message from server
+    printf("Received %d bytes\n", receivedMessage);
+		buffer[receivedMessage] = 0;
+		printf("Client received message: \"%s\"\n", buffer);
+
+		// TODO: Unpack data and set ret
     return ret;
 }
 
