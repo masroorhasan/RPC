@@ -173,7 +173,14 @@ extern return_type make_remote_call(const char *servernameorip,
 
     printf("Program execution complete. \n");
 
-    // TODO: Assign ret properly
+    // Receive message from server
+    socklen_t lengthOfServerAddress = sizeof(serverAddress);
+    int receivedMessage = recvfrom(socket, buffer, buffer_data_size,
+      0, (struct sockaddr *)&serverAddress,
+        &lengthOfServerAddress);
+    printf("Received %d bytes\n", receivedMessage);
+
+    // TODO: Unpack data and set ret
     return ret;
 }
 
