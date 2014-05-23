@@ -104,7 +104,9 @@ int serializeData(char *procedure_name, int nparams, va_list valist, char *buffe
   struct arg ptr;
   struct arg list;
 
-  for(int i = 0; i < nparams*2; i++){
+	int i;
+
+  for(i = 0; i < nparams*2; i++){
     if(i%2 == 0){
       ptr.arg_size = va_arg(valist, int);
     } else {
