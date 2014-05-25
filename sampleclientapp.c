@@ -91,7 +91,7 @@ struct hostent* getHostDetails(const char *ipAddress) {
   int serializeData(const char *procedure_name, int nparams, char *buffer[512]) {
   int serialize_offset = 0;
 
-  //test data
+  // Test data
   int first_parameter = 10;
   char *second_parameter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   int third_parameter = 20;
