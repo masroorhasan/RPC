@@ -88,7 +88,7 @@ struct hostent* getHostDetails(const char *ipAddress) {
     return host;
 }
 
-int serializeData(char *procedure_name, int nparams, va_list valist, char *buffer ) {
+  int serializeData(const char *procedure_name, int nparams, char *buffer[512]) {
   int serialize_offset = 0;
 
   //test data
@@ -142,12 +142,9 @@ extern return_type make_remote_call(const char *servernameorip,
     int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
     bindSocket(&socket);
 
-    unsigned char *buffer[512];
+    char *buffer[512];
 
-    va_list valist;
-    va_start(valist, nparams*2);
-    
-    serializeData(procedure_name, nparams, valist, buffer);
+    serializeData(procedure_name, nparams, buffer);
 
     // Create message destination address
     struct sockaddr_in serverAddress;
