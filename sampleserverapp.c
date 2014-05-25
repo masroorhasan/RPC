@@ -129,68 +129,44 @@ extern bool register_procedure(const char *procedure_name,
     return true;
 }
 
-return_type deserializeBuffer(unsigned char *rcvbuffer) {
-    size_t idx = 0;
-    //read sizeof(int) and get proc_size_value
-    int proc_size;
-    memcpy(&proc_size, rcvbuffer+idx, sizeof(int));
-    idx += sizeof(int);
-    	
-    printf("deserialized proc size: %i\n", proc_size);
-    
-    //read sizeof(proc_size_value) to get procname
-    char *proc_name;
-    memcpy(proc_name, rcvbuffer+idx, sizeof(proc_name));
-    idx += sizeof(proc_name);
+return_type deserializeBuffer(unsigned char *buffer) {
+  
+  return_type ret;
+  int deserialize_first;
+  int deserialize_first_size;
+  int deserialize_second_size;
+  int deserialize_third_size;
+  int deserialize_third;
+  int deserialize_offset = 0;
 
-    printf("deserialized proc name: %s\n", proc_name);
+  // Extract first parameter from buffer
+  memcpy(&deserialize_first_size, buffer, sizeof(int));
+  deserialize_offset += sizeof(int);
+  printf("deserialize: The first thing from the buffer is: %i\n", deserialize_first_size);
 
-    //read sizeof(int) and get nparams
-    int num_params;
-    memcpy(&num_params, rcvbuffer+idx, sizeof(num_params));
-    idx += sizeof(num_params);
+  memcpy(&deserialize_first, buffer + deserialize_offset, deserialize_first_size);
+  deserialize_offset += deserialize_first_size;
+  printf("deserialize: The second thing from the buffer is %i\n", deserialize_first);
 
-    printf("num params: %i \n", num_params);
-    //read sizeof(int) * 2 to get size and param value from 
-    arg_type *curr, *head;
-    head = NULL;
+  memcpy(&deserialize_second_size, buffer + deserialize_offset, sizeof(int));
+  deserialize_offset += sizeof(int);
+  printf("deserialize: The third thing from the buffer is %i\n", deserialize_second_size);
 
-    int j = 0;
-    for(; j < num_params; j++) {
-        curr = (arg_type *)malloc(sizeof(arg_type));
-       	
-	int size; 
-        memcpy(&size, rcvbuffer+idx, sizeof(int) );
-        idx += sizeof(int);
+  char *deserialize_second = malloc(deserialize_second_size);
 
-        printf("size: %i \n", curr->arg_size);
+  memcpy(deserialize_second, buffer + deserialize_offset, deserialize_second_size);
+  deserialize_offset += deserialize_second_size;
+  printf("deserialize: The fourth thing from the buffer is %s\n", deserialize_second);
 
-        memcpy(curr->arg_val, rcvbuffer+idx, curr->arg_size);
-        idx += sizeof(curr->arg_val);
+  memcpy(&deserialize_third_size, buffer + deserialize_offset, sizeof(int));
+  deserialize_offset += sizeof(int);
+  printf("deserialize: The fifth thing from the buffer is %i\n", deserialize_third_size);
 
-        printf("val: %i \n", *(int *)curr->arg_val);
+  memcpy(&deserialize_third, buffer + deserialize_offset, deserialize_third_size);
 
-        curr->next = head;
-        head = curr;
-    }
+  printf("The sixth thing from the buffer is %i\n", deserialize_third);
 
-    curr = head;
-
-    int i = 0;
-    return_type ret;
-    for(; i < TABLE_SIZE; i++) {
-        //if(proc_table[i].proc_name == proc_name) {
-          if(strcmp(proc_table[i].proc_name, proc_name) == 0){
-            //can grab func ptr to call function with known signature
-            // proc_table[i].fp 
-            ret = (* proc_table[i].fp)(num_params, curr);
-            break;
-        }
-    }
-
-    printf("return value: %i \n", *(int *)ret.return_val);
-
-    return ret;
+  return ret;
 }
 
 /* launch_server() -- used by the app programmer's server code to indicate that

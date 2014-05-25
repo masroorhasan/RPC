@@ -89,52 +89,42 @@ struct hostent* getHostDetails(const char *ipAddress) {
 }
 
 int serializeData(char *procedure_name, int nparams, va_list valist, char *buffer ) {
-  size_t idx = 0;
-  //int proc_size = strlen(procedure_name);
-  int proc_size = sizeof(procedure_name);
-  memcpy(buffer+idx, &proc_size, sizeof proc_size);
-  printf("proc size %i \n",*(int *)(buffer+idx) );
-  idx += sizeof proc_size;
+  int serialize_offset = 0;
 
-  memcpy(buffer+idx, procedure_name, sizeof procedure_name);
-  printf("proc name: %s \n", (buffer+idx) );
-  idx += sizeof procedure_name;
+  //test data
+  int first_parameter = 10;
+  char *second_parameter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  int third_parameter = 20;
 
-  memcpy(buffer+idx, &nparams, sizeof nparams);
-  printf("nparams: %i \n", *(int *)(buffer+idx));
-  idx += sizeof nparams;
+  // Copy first parameter size into buffer
+  int size_first_parameter = sizeof(first_parameter);
+  memcpy(buffer, &size_first_parameter, sizeof(size_first_parameter));
+  serialize_offset += sizeof(size_first_parameter);
 
-  // struct arg ptr;
-  // struct arg list;
-  // int i = 0;
-  // for(; i < nparams*2; i++){
-  //   if(i%2 == 0){
-  //     ptr.arg_size = va_arg(valist, int);
-  //   } else {
-  //     ptr.arg_val = va_arg(valist, void*);
-  //     printf("val: %i \n", *(int *)(ptr.arg_val));
-  //     list.next = &ptr;
-  //     list = ptr;
-  //   }
-  // }
-  int i = 0;
-  for(; i < nparams; i++){
-    int size = va_arg(valist, int);
-    memcpy(buffer+idx, &size, sizeof(size));
-    printf("param size: %i \n", *(int*)(buffer+idx) );
-    idx += sizeof(size);
+  // Copy first parameter into buffer
+  memcpy(buffer + serialize_offset, &first_parameter, size_first_parameter);
+  serialize_offset += size_first_parameter;
 
+  // Copy second parameter size into buffer
+  int size_second_parameter = sizeof(char) * strlen(second_parameter);
+  memcpy(buffer + serialize_offset, &size_second_parameter, sizeof(size_second_parameter));
+  serialize_offset += sizeof(size_second_parameter);
 
-    int var = *(int *)va_arg(valist, void*);
-    memcpy(buffer+idx, &var, size);
-    printf("param var: %i \n", *(int*)(buffer+idx) );
-    idx += size;
-  }
-  
-  // memcpy(buffer+idx, &list, sizeof list);
-  // idx += sizeof list;
+  printf("The size of the second parameter is: %i\n", size_second_parameter);
 
-  return idx;
+  // Copy second parameter into buffer
+  memcpy(buffer + serialize_offset, second_parameter, size_second_parameter);
+  serialize_offset += size_second_parameter;
+
+  // Copy third parameter size into buffer
+  int size_third_parameter = sizeof(third_parameter);
+  memcpy(buffer + serialize_offset, &size_third_parameter, sizeof(third_parameter));
+  serialize_offset += sizeof(third_parameter);
+
+  // Copy third parameter into buffer
+  memcpy(buffer + serialize_offset, &third_parameter, size_third_parameter);
+
+  return serialize_offset;
 }
 
 extern return_type make_remote_call(const char *servernameorip,
@@ -152,24 +142,12 @@ extern return_type make_remote_call(const char *servernameorip,
     int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
     bindSocket(&socket);
 
-    // TODO: Serialize data instead of a simple message
-    char *message = "Test Message.";
-
-    //serialized data processing
-    int buff_size = sizeof(int);
-    buff_size += sizeof procedure_name;
-    buff_size += sizeof(int);
-    buff_size += sizeof(arg_type);
-
     unsigned char *buffer[512];
 
     va_list valist;
     va_start(valist, nparams*2);
-
-    // printf("before memcpy: %lu \n", sizeof(buffer));
-    int buffer_data_size = serializeData(procedure_name, nparams, valist, buffer);
-    // printf("after memcpy: %lu \n", sizeof(buffer));
-
+    
+    serializeData(procedure_name, nparams, valist, buffer);
 
     // Create message destination address
     struct sockaddr_in serverAddress;
@@ -180,7 +158,7 @@ extern return_type make_remote_call(const char *servernameorip,
     memcpy((void *)&serverAddress.sin_addr, serverLookup->h_addr_list[0], serverLookup->h_length);
 
     // Send message to server
-    if (sendto(socket, buffer, buffer_data_size,
+    if (sendto(socket, buffer, sizeof(buffer),
       0, (struct sockaddr *)&serverAddress,
       sizeof(serverAddress)) < 0) {
         perror("Failed to send message.");
