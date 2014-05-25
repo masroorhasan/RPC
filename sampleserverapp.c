@@ -131,42 +131,30 @@ extern bool register_procedure(const char *procedure_name,
 
 return_type deserializeBuffer(unsigned char *buffer) {
   
-  return_type ret;
-  int deserialize_first;
-  int deserialize_first_size;
-  int deserialize_second_size;
-  int deserialize_third_size;
-  int deserialize_third;
-  int deserialize_offset = 0;
+    return_type ret;
+    int deserialize_first;
+    int deserialize_proc_size;
+    int deserialize_second_size;
+    int eserialize_nparams;
+    int deserialize_third;
+    int deserialize_offset = 0;
 
-  // Extract first parameter from buffer
-  memcpy(&deserialize_first_size, buffer, sizeof(int));
-  deserialize_offset += sizeof(int);
-  printf("deserialize: The first thing from the buffer is: %i\n", deserialize_first_size);
+      // Extract first parameter from buffer
+    memcpy(&deserialize_proc_size, buffer, sizeof(int));
+    deserialize_offset += sizeof(int);
+    printf("deserialize proc size: %i\n", deserialize_proc_size);
 
-  memcpy(&deserialize_first, buffer + deserialize_offset, deserialize_first_size);
-  deserialize_offset += deserialize_first_size;
-  printf("deserialize: The second thing from the buffer is %i\n", deserialize_first);
+    char *deserialize_proc_name = malloc(deserialize_proc_size);
 
-  memcpy(&deserialize_second_size, buffer + deserialize_offset, sizeof(int));
-  deserialize_offset += sizeof(int);
-  printf("deserialize: The third thing from the buffer is %i\n", deserialize_second_size);
+    memcpy(deserialize_proc_name, buffer + deserialize_offset, deserialize_proc_size);
+    deserialize_offset += deserialize_proc_size;
+    printf("deserialize: The fourth thing from the buffer is %s\n", deserialize_proc_name);
 
-  char *deserialize_second = malloc(deserialize_second_size);
+    memcpy(&eserialize_nparams, buffer + deserialize_offset, sizeof(int));
+    deserialize_offset += sizeof(int);
+    printf("deserialize: The fifth thing from the buffer is %i\n", eserialize_nparams);
 
-  memcpy(deserialize_second, buffer + deserialize_offset, deserialize_second_size);
-  deserialize_offset += deserialize_second_size;
-  printf("deserialize: The fourth thing from the buffer is %s\n", deserialize_second);
-
-  memcpy(&deserialize_third_size, buffer + deserialize_offset, sizeof(int));
-  deserialize_offset += sizeof(int);
-  printf("deserialize: The fifth thing from the buffer is %i\n", deserialize_third_size);
-
-  memcpy(&deserialize_third, buffer + deserialize_offset, deserialize_third_size);
-
-  printf("The sixth thing from the buffer is %i\n", deserialize_third);
-
-  return ret;
+    return ret;
 }
 
 /* launch_server() -- used by the app programmer's server code to indicate that
