@@ -135,6 +135,9 @@ void deserializeBuffer(unsigned char *rcvbuffer) {
     char *proc_name;
     memcpy(&proc_name, &rcvbuffer[idx], proc_size);
     idx += proc_size;
+
+    printf("deserialized proc name: %s\n", proc_name);
+
     //read sizeof(int) and get nparams
     int num_params;
     memcpy(&num_params, &rcvbuffer[idx], sizeof(num_params));
@@ -145,13 +148,17 @@ void deserializeBuffer(unsigned char *rcvbuffer) {
     idx += sizeof(list);
 
     int i = 0;
+    return_type ret;
     for(; i < TABLE_SIZE; i++) {
         if(proc_table[i].proc_name == proc_name) {
             //can grab func ptr to call function with known signature
-            
+            // proc_table[i].fp 
+            ret = (* proc_table[i].fp)(num_params, &list);
+            break;
         }
     }
 
+    printf("return value: %i \n", *(int *)ret.return_val);
 }
 
 /* launch_server() -- used by the app programmer's server code to indicate that
