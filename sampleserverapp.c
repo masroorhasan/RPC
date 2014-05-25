@@ -129,27 +129,25 @@ return_type deserializeBuffer(unsigned char *rcvbuffer) {
     size_t idx = 0;
     //read sizeof(int) and get proc_size_value
     int proc_size;
-    memcpy(&proc_size, &rcvbuffer[idx], sizeof(int));
+    memcpy(&proc_size, rcvbuffer+idx, sizeof(int));
     idx += sizeof(proc_size);
     	
     printf("deserialized proc size: %i\n", proc_size);
     
-    //printf("reading off buffer: %s\n", rcvbuffer[idx+1]);
-
     //read sizeof(proc_size_value) to get procname
-    char *proc_name[proc_size];
-    memcpy(&proc_name, &rcvbuffer[idx], sizeof(proc_name));
+    char *proc_name;
+    memcpy(proc_name, rcvbuffer+idx, sizeof(proc_name));
     idx += sizeof(proc_name);
 
     printf("deserialized proc name: %s\n", proc_name);
 
     //read sizeof(int) and get nparams
     int num_params;
-    memcpy(&num_params, &rcvbuffer[idx], sizeof(num_params));
+    memcpy(&num_params, rcvbuffer+idx, sizeof(num_params));
     idx += sizeof(num_params);
     //read sizeof(int) * 2 to get size and param value from 
     arg_type list;
-    memcpy(&list, &rcvbuffer[idx], sizeof(list));
+    memcpy(&list, rcvbuffer+idx, sizeof(list));
     idx += sizeof(list);
 
     int i = 0;

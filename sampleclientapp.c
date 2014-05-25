@@ -92,13 +92,13 @@ int serializeData(char *procedure_name, int nparams, va_list valist, char *buffe
   size_t idx = 0;
   //int proc_size = strlen(procedure_name);
   int proc_size = sizeof(procedure_name);
-  memcpy(&buffer[idx], &proc_size, sizeof proc_size);
+  memcpy(buffer+idx, &proc_size, sizeof proc_size);
   idx += sizeof proc_size;
 
-  memcpy(&buffer[idx], &procedure_name, sizeof procedure_name);
+  memcpy(buffer+idx, procedure_name, sizeof procedure_name);
   idx += sizeof procedure_name;
 
-  memcpy(&buffer[idx], &nparams, sizeof nparams);
+  memcpy(buffer+idx, &nparams, sizeof nparams);
   idx += sizeof nparams;
 
   struct arg ptr;
@@ -116,7 +116,7 @@ int serializeData(char *procedure_name, int nparams, va_list valist, char *buffe
   }
 
 
-  memcpy(&buffer[idx], &list, sizeof list);
+  memcpy(buffer+idx, &list, sizeof list);
   idx += sizeof list;
 
   return idx;
@@ -180,7 +180,7 @@ extern return_type make_remote_call(const char *servernameorip,
 int main() {
     int a = -10, b = 20;
     return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
-      10005,
+      10003,
       "addtwo", 2,
       sizeof(int), (void *)(&a),
       sizeof(int), (void *)(&b));
