@@ -88,7 +88,7 @@ struct hostent* getHostDetails(const char *ipAddress) {
     return host;
 }
 
-  int serializeData(const char *procedure_name, int nparams, char *buffer[512]) {
+  int serializeData(const char *procedure_name, int nparams, char *buffer) {
   int serialize_offset = 0;
 
   // Test data
@@ -169,8 +169,8 @@ extern return_type make_remote_call(const char *servernameorip,
 
 int main() {
     int a = -10, b = 20;
-    return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
-      10003,
+    return_type ans = make_remote_call("ecelinux5.uwaterloo.ca",
+      10000,
       "addtwo", 2,
       sizeof(int), (void *)(&a),
       sizeof(int), (void *)(&b));
