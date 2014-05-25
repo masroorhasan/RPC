@@ -125,7 +125,7 @@ extern bool register_procedure(const char *procedure_name,
     return true;
 }
 
-void deserializeBuffer(unsigned char *rcvbuffer) {
+return_type deserializeBuffer(unsigned char *rcvbuffer) {
     size_t idx = 0;
     //read sizeof(int) and get proc_size_value
     int proc_size;
@@ -159,6 +159,8 @@ void deserializeBuffer(unsigned char *rcvbuffer) {
     }
 
     printf("return value: %i \n", *(int *)ret.return_val);
+
+    return ret;
 }
 
 /* launch_server() -- used by the app programmer's server code to indicate that
@@ -184,6 +186,7 @@ void launch_server() {
         if (receivedSize > 0) {
             receiveBuffer[receivedSize] = 0;
             //deserialize rcvbuffer, return proc_name and args
+            deserializeBuffer(receiveBuffer);
             //compute result
             //take result and sendto() client            
 
