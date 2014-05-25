@@ -146,9 +146,28 @@ return_type deserializeBuffer(unsigned char *rcvbuffer) {
     memcpy(&num_params, rcvbuffer+idx, sizeof(num_params));
     idx += sizeof(num_params);
     //read sizeof(int) * 2 to get size and param value from 
-    arg_type list;
-    memcpy(&list, rcvbuffer+idx, sizeof(list));
-    idx += sizeof(list);
+    arg_type *curr, *head;
+    head = NULL;
+
+    int j = 0;
+    for(; j < num_params; j++) {
+        curr = (arg_type *)malloc(sizeof(arg_type));
+        
+        memcpy( &(curr->arg_size), rcvbuffer+idx, sizeof(int) );
+        idx += sizeof(int);
+
+        printf("size: %i \n", curr->arg_size);
+
+        memcpy(curr->arg_val, rcvbuffer+idx, curr->arg_size);
+        idx += sizeof(curr->arg_val);
+
+        printf("val: %i \n", *(int *)curr->arg_val);
+
+        curr->next = head;
+        head = curr;
+    }
+
+    curr = head;
 
     int i = 0;
     return_type ret;
@@ -156,7 +175,7 @@ return_type deserializeBuffer(unsigned char *rcvbuffer) {
         if(proc_table[i].proc_name == proc_name) {
             //can grab func ptr to call function with known signature
             // proc_table[i].fp 
-            ret = (* proc_table[i].fp)(num_params, &list);
+            ret = (* proc_table[i].fp)(num_params, curr);
             break;
         }
     }

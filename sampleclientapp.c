@@ -101,23 +101,35 @@ int serializeData(char *procedure_name, int nparams, va_list valist, char *buffe
   memcpy(buffer+idx, &nparams, sizeof nparams);
   idx += sizeof nparams;
 
-  struct arg ptr;
-  struct arg list;
+  // struct arg ptr;
+  // struct arg list;
+  // int i = 0;
+  // for(; i < nparams*2; i++){
+  //   if(i%2 == 0){
+  //     ptr.arg_size = va_arg(valist, int);
+  //   } else {
+  //     ptr.arg_val = va_arg(valist, void*);
+  //     printf("val: %i \n", *(int *)(ptr.arg_val));
+  //     list.next = &ptr;
+  //     list = ptr;
+  //   }
+  // }
   int i = 0;
-  for(; i < nparams*2; i++){
-    if(i%2 == 0){
-      ptr.arg_size = va_arg(valist, int);
-    } else {
-      ptr.arg_val = va_arg(valist, void*);
-      printf("val: %i \n", *(int *)(ptr.arg_val));
-      list.next = &ptr;
-      list = ptr;
-    }
+  for(; i < nparams; i++){
+    int size = va_arg(valist, int);
+    memcpy(buffer+idx, &size, sizeof(size));
+    // printf("size: %i \n", *(int*)(buffer+idx) );
+    idx += sizeof(size);
+
+
+    int var = *(int *)va_arg(valist, void*);
+    memcpy(buffer+idx, &var, size);
+    // printf("var: %i \n", *(int*)(buffer+idx) );
+    idx += size;
   }
 
-
-  memcpy(buffer+idx, &list, sizeof list);
-  idx += sizeof list;
+  // memcpy(buffer+idx, &list, sizeof list);
+  // idx += sizeof list;
 
   return idx;
 }
