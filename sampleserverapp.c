@@ -129,12 +129,17 @@ return_type deserializeBuffer(unsigned char *rcvbuffer) {
     size_t idx = 0;
     //read sizeof(int) and get proc_size_value
     int proc_size;
-    memcpy(&proc_size, &rcvbuffer[idx], sizeof(proc_size));
+    memcpy(&proc_size, &rcvbuffer[idx], sizeof(int));
     idx += sizeof(proc_size);
+    	
+    printf("deserialized proc size: %i\n", proc_size);
+    
+    //printf("reading off buffer: %s\n", rcvbuffer[idx+1]);
+
     //read sizeof(proc_size_value) to get procname
-    char *proc_name;
-    memcpy(&proc_name, &rcvbuffer[idx], proc_size);
-    idx += proc_size;
+    char *proc_name[proc_size];
+    memcpy(&proc_name, &rcvbuffer[idx], sizeof(proc_name));
+    idx += sizeof(proc_name);
 
     printf("deserialized proc name: %s\n", proc_name);
 

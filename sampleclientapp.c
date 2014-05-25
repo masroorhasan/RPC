@@ -90,8 +90,8 @@ struct hostent* getHostDetails(const char *ipAddress) {
 
 int serializeData(char *procedure_name, int nparams, va_list valist, char *buffer ) {
   size_t idx = 0;
-  int proc_size = strlen(procedure_name);
-
+  //int proc_size = strlen(procedure_name);
+  int proc_size = sizeof(procedure_name);
   memcpy(&buffer[idx], &proc_size, sizeof proc_size);
   idx += sizeof proc_size;
 
@@ -180,7 +180,7 @@ extern return_type make_remote_call(const char *servernameorip,
 int main() {
     int a = -10, b = 20;
     return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
-      10000,
+      10005,
       "addtwo", 2,
       sizeof(int), (void *)(&a),
       sizeof(int), (void *)(&b));
