@@ -93,12 +93,15 @@ int serializeData(char *procedure_name, int nparams, va_list valist, char *buffe
   //int proc_size = strlen(procedure_name);
   int proc_size = sizeof(procedure_name);
   memcpy(buffer+idx, &proc_size, sizeof proc_size);
+  printf("proc size %i \n",*(int *)(buffer+idx) );
   idx += sizeof proc_size;
 
   memcpy(buffer+idx, procedure_name, sizeof procedure_name);
+  printf("proc name: %s \n", (buffer+idx) );
   idx += sizeof procedure_name;
 
   memcpy(buffer+idx, &nparams, sizeof nparams);
+  printf("nparams: %i \n", *(int *)(buffer+idx));
   idx += sizeof nparams;
 
   // struct arg ptr;
@@ -118,16 +121,16 @@ int serializeData(char *procedure_name, int nparams, va_list valist, char *buffe
   for(; i < nparams; i++){
     int size = va_arg(valist, int);
     memcpy(buffer+idx, &size, sizeof(size));
-    // printf("size: %i \n", *(int*)(buffer+idx) );
+    printf("param size: %i \n", *(int*)(buffer+idx) );
     idx += sizeof(size);
 
 
     int var = *(int *)va_arg(valist, void*);
     memcpy(buffer+idx, &var, size);
-    // printf("var: %i \n", *(int*)(buffer+idx) );
+    printf("param var: %i \n", *(int*)(buffer+idx) );
     idx += size;
   }
-
+  
   // memcpy(buffer+idx, &list, sizeof list);
   // idx += sizeof list;
 
@@ -158,7 +161,7 @@ extern return_type make_remote_call(const char *servernameorip,
     buff_size += sizeof(int);
     buff_size += sizeof(arg_type);
 
-    unsigned char *buffer[buff_size];
+    unsigned char *buffer[512];
 
     va_list valist;
     va_start(valist, nparams*2);
