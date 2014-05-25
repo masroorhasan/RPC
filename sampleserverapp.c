@@ -76,12 +76,15 @@ void bindSocket(int *socket) {
 
 return_type add(const int nparams, arg_type* a)
 {
+    printf("here in addtwo function\n");
     if(nparams != 2) {
 	/* Error! */
 	r.return_val = NULL;
 	r.return_size = 0;
 	return r;
     }
+    
+    printf("here \n");
 
     if(a->arg_size != sizeof(int) ||
        a->next->arg_size != sizeof(int)) {
@@ -91,6 +94,7 @@ return_type add(const int nparams, arg_type* a)
 	return r;
     }
 
+    printf("here2 \n");
     int i = *(int *)(a->arg_val);
     int j = *(int *)(a->next->arg_val);
 
@@ -130,7 +134,7 @@ return_type deserializeBuffer(unsigned char *rcvbuffer) {
     //read sizeof(int) and get proc_size_value
     int proc_size;
     memcpy(&proc_size, rcvbuffer+idx, sizeof(int));
-    idx += sizeof(proc_size);
+    idx += sizeof(int);
     	
     printf("deserialized proc size: %i\n", proc_size);
     
@@ -145,6 +149,8 @@ return_type deserializeBuffer(unsigned char *rcvbuffer) {
     int num_params;
     memcpy(&num_params, rcvbuffer+idx, sizeof(num_params));
     idx += sizeof(num_params);
+
+    printf("num params: %i \n", num_params);
     //read sizeof(int) * 2 to get size and param value from 
     arg_type *curr, *head;
     head = NULL;
@@ -152,8 +158,9 @@ return_type deserializeBuffer(unsigned char *rcvbuffer) {
     int j = 0;
     for(; j < num_params; j++) {
         curr = (arg_type *)malloc(sizeof(arg_type));
-        
-        memcpy( &(curr->arg_size), rcvbuffer+idx, sizeof(int) );
+       	
+	int size; 
+        memcpy(&size, rcvbuffer+idx, sizeof(int) );
         idx += sizeof(int);
 
         printf("size: %i \n", curr->arg_size);
@@ -172,7 +179,8 @@ return_type deserializeBuffer(unsigned char *rcvbuffer) {
     int i = 0;
     return_type ret;
     for(; i < TABLE_SIZE; i++) {
-        if(proc_table[i].proc_name == proc_name) {
+        //if(proc_table[i].proc_name == proc_name) {
+          if(strcmp(proc_table[i].proc_name, proc_name) == 0){
             //can grab func ptr to call function with known signature
             // proc_table[i].fp 
             ret = (* proc_table[i].fp)(num_params, curr);
