@@ -132,11 +132,8 @@ extern bool register_procedure(const char *procedure_name,
 return_type deserializeBuffer(unsigned char *buffer) {
   
     return_type ret;
-    int deserialize_first;
     int deserialize_proc_size;
-    int deserialize_second_size;
-    int eserialize_nparams;
-    int deserialize_third;
+    int deserialize_nparams;
     int deserialize_offset = 0;
 
       // Extract first parameter from buffer
@@ -150,9 +147,9 @@ return_type deserializeBuffer(unsigned char *buffer) {
     deserialize_offset += deserialize_proc_size;
     printf("deserialize: The fourth thing from the buffer is %s\n", deserialize_proc_name);
 
-    memcpy(&eserialize_nparams, buffer + deserialize_offset, sizeof(int));
+    memcpy(&deserialize_nparams, buffer + deserialize_offset, sizeof(int));
     deserialize_offset += sizeof(int);
-    printf("deserialize: The fifth thing from the buffer is %i\n", eserialize_nparams);
+    printf("deserialize: The fifth thing from the buffer is %i\n", deserialize_nparams);
 
     return ret;
 }
