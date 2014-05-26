@@ -112,12 +112,14 @@ int serializeData(const char *procedure_name, int nparams, va_list valist, char 
     int i = 0;
     for(; i < nparams; i++){
         int param_size = va_arg(valist, int);
+	printf("index %i, param size %i \n", i, param_size);
         memcpy(buffer + serialize_offset, &param_size, sizeof(int));
         serialize_offset += sizeof(int);
 
         void *param_val = va_arg(valist, void*);
-        memcpy(buffer + serialize_offset, param_val, sizeof(param_val));
-        serialize_offset += sizeof(param_val);
+	printf("index %i, param val %i \n", i, *(int *)param_val);
+        memcpy(buffer + serialize_offset, param_val, param_size);
+        serialize_offset += param_size;
     }
 
     return serialize_offset;
@@ -172,7 +174,7 @@ extern return_type make_remote_call(const char *servernameorip,
 int main() {
     int a = -10, b = 20;
     return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
-      10001,
+      10000,
       "addtwo", 2,
       sizeof(int), (void *)(&a),
       sizeof(int), (void *)(&b));
