@@ -153,10 +153,11 @@ return_type deserializeBuffer(unsigned char *buffer) {
     printf("deserialize: The fifth thing from the buffer is %i\n", deserialize_nparams);
 
     //extract params
-    arg_type *current;
-    arg_type *head;
+    arg_type *current, *head;
+    
+    head = 0;
+    current = head;
 
-    head = NULL;
     int i = 0;
     for(; i < deserialize_nparams; i++) {
         current = (arg_type *)malloc(sizeof(arg_type));
@@ -173,18 +174,28 @@ return_type deserializeBuffer(unsigned char *buffer) {
 	printf("Set current arg size to %i\n", current->arg_size);
         current->arg_val = arg_val;        
 	printf("Set current arg value to %i\n", *(int *)current->arg_val);
-        current->next = head;
+	
+	current->next = head;
         head = current;
     }
-
     current = head;
     printf("Printing the list.\n");
-    while(current){
+    while(current != 0){
 	printf("The memory address of current is %x\n", &current);
 	printf("arg size %i \n", current->arg_size);
 	printf("arg val %i \n", *(int *)current->arg_val);
 	current = current->next;
     }
+
+    i = 0;
+    for(; i < TABLE_SIZE; i++){
+	if(strcmp(proc_table[i].proc_name, deserialize_proc_name) == 0){
+	    ret = (proc_table[i].fp)(deserialize_nparams, head);
+	    break;
+	}
+    }
+
+    printf("return val %i \n", *(int *)ret.return_val);
 
     return ret;
 }
