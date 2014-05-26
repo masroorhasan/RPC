@@ -124,7 +124,7 @@ int serializeData(const char *procedure_name, int nparams, va_list valist, char 
 
     return serialize_offset;
 }
-
+/*
 return_type deserializeRcvBuffer(unsigned char* buffer)
 {
     printf("Deserializing rcv buffer from server\n");
@@ -145,6 +145,7 @@ return_type deserializeRcvBuffer(unsigned char* buffer)
 
     return ret;
 }
+*/
 
 extern return_type make_remote_call(const char *servernameorip,
   const int serverportnumber,
@@ -167,7 +168,6 @@ extern return_type make_remote_call(const char *servernameorip,
 
     // Create message destination address
     struct sockaddr_in serverAddress;
-    socklen_t serverAddressLength = sizeof(serverAddress);
     memset((char*)&serverAddress, 0, sizeof(serverAddress));
 
     serverAddress.sin_family = AF_INET;
@@ -184,7 +184,7 @@ extern return_type make_remote_call(const char *servernameorip,
     }
 
     socklen_t lengthOfServerAddress = sizeof(serverAddress);
-    int receivedMessage = recvfrom(socket, buffer, buffer_data_size,
+    int receivedMessage = recvfrom(socket, buffer, sizeof(buffer),
       0, (struct sockaddr *)&serverAddress,
         &lengthOfServerAddress);
 
@@ -197,9 +197,10 @@ extern return_type make_remote_call(const char *servernameorip,
       //ret = deserializeRcvBuffer(rcvbuffer);
     }
 
-    printf("Program execution complete. \n");
+    close(socket);
 
-    // TODO: Assign ret properly
+    printf("Program execution complete. \n");
+    
     return ret;
 }
 
