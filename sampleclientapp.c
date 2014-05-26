@@ -183,15 +183,9 @@ extern return_type make_remote_call(const char *servernameorip,
         perror("Failed to send message.");
     }
 
-    unsigned char *rcvbuffer[512];
-    int receievedSize = recvfrom(socket, rcvbuffer, sizeof(rcvbuffer), 
-                      0, (struct sockaddr *)&serverAddress, &serverAddressLength);
-
-    return_type ret = deserializeRcvBuffer(rcvbuffer);
-
+    close(socket);
     printf("Program execution complete. \n");
-
-    // TODO: Assign ret properly
+    return_type ret;
     return ret;
 }
 

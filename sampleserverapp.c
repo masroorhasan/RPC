@@ -83,8 +83,6 @@ return_type add(const int nparams, arg_type* a)
 	r.return_size = 0;
 	return r;
     }
-    
-    printf("here \n");
 
     if(a->arg_size != sizeof(int) ||
        a->next->arg_size != sizeof(int)) {
@@ -94,7 +92,6 @@ return_type add(const int nparams, arg_type* a)
 	return r;
     }
 
-    printf("here2 \n");
     int i = *(int *)(a->arg_val);
     int j = *(int *)(a->next->arg_val);
 
@@ -200,19 +197,23 @@ return_type deserializeBuffer(unsigned char *buffer) {
     return ret;
 }
 
-void serializeSendBuffer(char *buffer, return_type ret)
+void serializeSendBuffer(unsigned char *buffer, return_type ret)
 {
     int idx = 0;
-    
+    int ret_size = ret.return_size;
+    void *ret_val = ret.return_val; 
     printf("serializing procedure result to send back to client\n");
 
-    memcpy(buffer, &(ret.return_size), sizeof(int) );
+    printf("ret_size passed in: %i\n", ret_size);
+    printf("ret_val passed in: %i\n", *(int *)ret_val);
+
+    memcpy(buffer, &ret_size, sizeof(int) );
     printf("return size %i \n", *(int *)buffer);
     idx += sizeof(int);
 
-    memcpy(buffer+idx, ret.return_val, ret.return_size);
+    memcpy(buffer+idx, ret_val, ret_size);
     printf("return val %i \n", *(int *)buffer+idx);
-    idx += ret.return_size;
+    idx += ret_size;
 }
 
 /* launch_server() -- used by the app programmer's server code to indicate that
@@ -238,17 +239,13 @@ void launch_server() {
         if (receivedSize > 0) {
             receiveBuffer[receivedSize] = 0;
             //deserialize rcvbuffer, return proc_name and args
-            char *buffer[512];
-            serializeSendBuffer(buffer, deserializeBuffer(receiveBuffer));
+	    return_type ret = deserializeBuffer(receiveBuffer);
+	    //serializeSendBuffer(receiveBuffer, ret);
             //take result and sendto() client
             printf("Sending result to client...\n");
-            if(sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&remoteAddress, 
-                    remoteAddressLength) < 0) {
-                perror("Failed to send to client");
-            }
-
-            // printf("Received Message: \"%s\"\n", receiveBuffer);
-        }
+        } else {
+	    printf("something wrong\n");
+	}
     }
 
 }
