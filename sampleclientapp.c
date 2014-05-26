@@ -182,13 +182,16 @@ extern return_type make_remote_call(const char *servernameorip,
       sizeof(serverAddress)) < 0) {
         perror("Failed to send message.");
     }
+    
+    return_type ret;
+/*
 
     socklen_t lengthOfServerAddress = sizeof(serverAddress);
     int receivedMessage = recvfrom(socket, buffer, sizeof(buffer),
       0, (struct sockaddr *)&serverAddress,
         &lengthOfServerAddress);
 
-    return_type ret;
+
     // Print message from server
     if(receivedMessage > 0) {
       printf("Received %d bytes\n", receivedMessage);
@@ -196,7 +199,7 @@ extern return_type make_remote_call(const char *servernameorip,
       printf("Client received message: \"%s\"\n", buffer);
       //ret = deserializeRcvBuffer(rcvbuffer);
     }
-
+*/
     close(socket);
 
     printf("Program execution complete. \n");
