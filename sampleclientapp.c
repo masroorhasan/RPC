@@ -112,12 +112,12 @@ int serializeData(const char *procedure_name, int nparams, va_list valist, char 
     int i = 0;
     for(; i < nparams; i++){
         int param_size = va_arg(valist, int);
-	printf("index %i, param size %i \n", i, param_size);
+	      printf("index %i, param size %i \n", i, param_size);
         memcpy(buffer + serialize_offset, &param_size, sizeof(int));
         serialize_offset += sizeof(int);
 
         void *param_val = va_arg(valist, void*);
-	printf("index %i, param val %i \n", i, *(int *)param_val);
+	      printf("index %i, param val %i \n", i, *(int *)param_val);
         memcpy(buffer + serialize_offset, param_val, param_size);
         serialize_offset += param_size;
     }
@@ -125,16 +125,32 @@ int serializeData(const char *procedure_name, int nparams, va_list valist, char 
     return serialize_offset;
 }
 
+return_type deserializeRcvBuffer(unsigned char* buffer)
+{
+    printf("Deserializing rcv buffer from server\n");
+
+    int ret_size;
+    void *ret_val;
+    int idx = 0;
+
+    memcpy(&ret_size, buffer, sizeof(int));
+    idx += sizeof(int);
+
+    memcpy(ret_val, buffer, ret_size);
+    idx += ret_size;
+
+    return_type ret;
+    ret.return_size = ret_size;
+    ret.return_val = ret_val;
+
+    return ret;
+}
+
 extern return_type make_remote_call(const char *servernameorip,
   const int serverportnumber,
   const char *procedure_name,
   const int nparams,
   ...) {
-
-    // Result of make remote call
-    void *val;
-    int size;
-    return_type ret = {val,size};
 
     // Create client socket
     int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
@@ -151,6 +167,7 @@ extern return_type make_remote_call(const char *servernameorip,
 
     // Create message destination address
     struct sockaddr_in serverAddress;
+    socklen_t serverAddressLength = sizeof(serverAddress);
     memset((char*)&serverAddress, 0, sizeof(serverAddress));
 
     serverAddress.sin_family = AF_INET;
@@ -159,11 +176,18 @@ extern return_type make_remote_call(const char *servernameorip,
     memcpy((void *)&serverAddress.sin_addr, serverLookup->h_addr_list[0], serverLookup->h_length);
 
     // Send message to server
+    printf("Sending to server...\n");
     if (sendto(socket, buffer, sizeof(buffer),
       0, (struct sockaddr *)&serverAddress,
       sizeof(serverAddress)) < 0) {
         perror("Failed to send message.");
     }
+
+    unsigned char *rcvbuffer[512];
+    int receievedSize = recvfrom(socket, rcvbuffer, sizeof(rcvbuffer), 
+                      0, (struct sockaddr *)&serverAddress, &serverAddressLength);
+
+    return_type ret = deserializeRcvBuffer(rcvbuffer);
 
     printf("Program execution complete. \n");
 

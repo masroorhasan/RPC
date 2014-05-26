@@ -171,33 +171,48 @@ return_type deserializeBuffer(unsigned char *buffer) {
         deserialize_offset += arg_size;
 
         current->arg_size = arg_size;
-	printf("Set current arg size to %i\n", current->arg_size);
+	    printf("Set current arg size to %i\n", current->arg_size);
         current->arg_val = arg_val;        
-	printf("Set current arg value to %i\n", *(int *)current->arg_val);
+	    printf("Set current arg value to %i\n", *(int *)current->arg_val);
 	
-	current->next = head;
+	    current->next = head;
         head = current;
     }
     current = head;
     printf("Printing the list.\n");
     while(current != 0){
-	printf("The memory address of current is %x\n", &current);
-	printf("arg size %i \n", current->arg_size);
-	printf("arg val %i \n", *(int *)current->arg_val);
-	current = current->next;
+    	printf("The memory address of current is %x\n", &current);
+    	printf("arg size %i \n", current->arg_size);
+    	printf("arg val %i \n", *(int *)current->arg_val);
+    	current = current->next;
     }
 
     i = 0;
     for(; i < TABLE_SIZE; i++){
-	if(strcmp(proc_table[i].proc_name, deserialize_proc_name) == 0){
-	    ret = (proc_table[i].fp)(deserialize_nparams, head);
-	    break;
-	}
+        if(strcmp(proc_table[i].proc_name, deserialize_proc_name) == 0){
+            ret = (proc_table[i].fp)(deserialize_nparams, head);
+            break;
+        }
     }
 
     printf("return val %i \n", *(int *)ret.return_val);
 
     return ret;
+}
+
+void serializeSendBuffer(char *buffer, return_type ret)
+{
+    int idx = 0;
+    
+    printf("serializing procedure result to send back to client\n");
+
+    memcpy(buffer, &(ret.return_size), sizeof(int) );
+    printf("return size %i \n", *(int *)buffer);
+    idx += sizeof(int);
+
+    memcpy(buffer+idx, ret.return_val, ret.return_size);
+    printf("return val %i \n", *(int *)buffer+idx);
+    idx += ret.return_size;
 }
 
 /* launch_server() -- used by the app programmer's server code to indicate that
@@ -223,11 +238,16 @@ void launch_server() {
         if (receivedSize > 0) {
             receiveBuffer[receivedSize] = 0;
             //deserialize rcvbuffer, return proc_name and args
-            deserializeBuffer(receiveBuffer);
-            //compute result
-            //take result and sendto() client            
+            char *buffer[512];
+            serializeSendBuffer(buffer, deserializeBuffer(receiveBuffer));
+            //take result and sendto() client
+            printf("Sending result to client...\n");
+            if(sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&remoteAddress, 
+                    remoteAddressLength) < 0) {
+                perror("Failed to send to client");
+            }
 
-            printf("Received Message: \"%s\"\n", receiveBuffer);
+            // printf("Received Message: \"%s\"\n", receiveBuffer);
         }
     }
 
