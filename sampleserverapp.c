@@ -17,7 +17,7 @@
 // memset
 #include <string.h>
 
-#define BUFSIZE 2048
+#define BUFSIZE 512
 
 int ret_int;
 return_type r;

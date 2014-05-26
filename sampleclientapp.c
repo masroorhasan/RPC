@@ -21,6 +21,8 @@
 // variable arguments
 #include <stdarg.h>
 
+#define BUFSIZE 512
+
 typedef struct {
     char *proc_name;
     int num_params;
@@ -142,7 +144,7 @@ extern return_type make_remote_call(const char *servernameorip,
     int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
     bindSocket(&socket);
 
-    char *buffer[512];
+    char *buffer[BUFSIZE];
 
     va_list valist;
     va_start(valist, nparams*2);
@@ -152,6 +154,7 @@ extern return_type make_remote_call(const char *servernameorip,
     // Create message destination address
     struct sockaddr_in serverAddress;
     memset((char*)&serverAddress, 0, sizeof(serverAddress));
+
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(serverportnumber);
     struct hostent * serverLookup = getHostDetails(servernameorip); // TODO: Check if IP address or server name
@@ -172,8 +175,8 @@ extern return_type make_remote_call(const char *servernameorip,
 
 int main() {
     int a = -10, b = 20;
-    return_type ans = make_remote_call("ecelinux5.uwaterloo.ca",
-      10000,
+    return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
+      10001,
       "addtwo", 2,
       sizeof(int), (void *)(&a),
       sizeof(int), (void *)(&b));
