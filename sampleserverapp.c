@@ -136,20 +136,45 @@ return_type deserializeBuffer(unsigned char *buffer) {
     int deserialize_nparams;
     int deserialize_offset = 0;
 
-      // Extract first parameter from buffer
+    //extract proc name size 
     memcpy(&deserialize_proc_size, buffer, sizeof(int));
     deserialize_offset += sizeof(int);
     printf("deserialize proc size: %i\n", deserialize_proc_size);
 
+    //extract proc name
     char *deserialize_proc_name = malloc(deserialize_proc_size);
-
     memcpy(deserialize_proc_name, buffer + deserialize_offset, deserialize_proc_size);
     deserialize_offset += deserialize_proc_size;
     printf("deserialize: The fourth thing from the buffer is %s\n", deserialize_proc_name);
 
+    //extract nparams
     memcpy(&deserialize_nparams, buffer + deserialize_offset, sizeof(int));
     deserialize_offset += sizeof(int);
     printf("deserialize: The fifth thing from the buffer is %i\n", deserialize_nparams);
+
+    //extract params
+    arg_type *current;
+    arg_type *head = NULL;
+
+    int i = 0;
+    for(; i < deserialize_nparams; i++) {
+        current = (arg_type *)malloc(sizeof(arg_type));
+
+        int arg_size; 
+        memcpy(&arg_size, buffer + deserialize_offset, sizeof(int));
+        printf("index %i, arg size is %i, \n", i, arg_size);
+        deserialize_offset += sizeof(int);
+
+        void *arg_val;
+        memcpy(arg_val, buffer + deserialize_offset, arg_size);
+        printf("index %i, arg val is %i, \n", i, *(int *)arg_val);
+        deserialize_offset += arg_size;
+
+        current->arg_size = arg_size;
+        current->arg_val = arg_val;        
+        current->next = head;
+        head = current;
+    }
 
     return ret;
 }

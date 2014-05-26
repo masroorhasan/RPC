@@ -93,38 +93,32 @@ struct hostent* getHostDetails(const char *ipAddress) {
 int serializeData(const char *procedure_name, int nparams, va_list valist, char *buffer) {
     int serialize_offset = 0;
 
-    // Test data
-    // int first_parameter = 10;
-    char *second_parameter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    int third_parameter = 20;
-
-    // Copy first parameter size into buffer
-    // int size_first_parameter = sizeof(first_parameter);
-    // memcpy(buffer, &size_first_parameter, sizeof(size_first_parameter));
-    // serialize_offset += sizeof(size_first_parameter);
-
-    // // Copy first parameter into buffer
-    // memcpy(buffer + serialize_offset, &first_parameter, size_first_parameter);
-    // serialize_offset += size_first_parameter;
-
     // Copy proc size into buffer
     int size_proc = sizeof(char) * strlen(procedure_name);
     memcpy(buffer, &size_proc, sizeof(size_proc));
     serialize_offset += sizeof(size_proc);
 
-    printf("The size of the second parameter is: %i\n", size_proc);
+    // printf("The size of the second parameter is: %i\n", size_proc);
 
     // Copy proc name into buffer
     memcpy(buffer + serialize_offset, procedure_name, size_proc);
     serialize_offset += size_proc;
 
     // Copy nparams into buffer
-    // int size_third_parameter = sizeof(third_parameter);
     memcpy(buffer + serialize_offset, &nparams, sizeof(nparams));
     serialize_offset += sizeof(nparams);
 
-    // Copy third parameter into buffer
-    // memcpy(buffer + serialize_offset, &third_parameter, size_third_parameter);
+    //copy args to buffer
+    int i = 0;
+    for(; i < nparams; i++){
+        int param_size = va_arg(valist, int);
+        memcpy(buffer + serialize_offset, &param_size, sizeof(int));
+        serialize_offset += sizeof(int);
+
+        void *param_val = va_arg(valist, void*);
+        memcpy(buffer + serialize_offset, param_val, sizeof(param_val));
+        serialize_offset += sizeof(param_val);
+    }
 
     return serialize_offset;
 }
@@ -150,6 +144,8 @@ extern return_type make_remote_call(const char *servernameorip,
     va_start(valist, nparams*2);
 
     serializeData(procedure_name, nparams, valist, buffer);
+
+    // va_end(valist);
 
     // Create message destination address
     struct sockaddr_in serverAddress;
