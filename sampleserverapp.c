@@ -242,12 +242,7 @@ void launch_server() {
             serializeSendBuffer(buffer, deserializeBuffer(receiveBuffer));
             //take result and sendto() client
             printf("Sending result to client...\n");
-            if(sendto(socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&remoteAddress, 
-                    remoteAddressLength) < 0) {
-                perror("Failed to send to client");
-            }
-
-            // printf("Received Message: \"%s\"\n", receiveBuffer);
+           
         }
     }
 
