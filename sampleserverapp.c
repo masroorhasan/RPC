@@ -154,26 +154,36 @@ return_type deserializeBuffer(unsigned char *buffer) {
 
     //extract params
     arg_type *current;
-    arg_type *head = NULL;
+    arg_type *head;
 
+    head = NULL;
     int i = 0;
     for(; i < deserialize_nparams; i++) {
         current = (arg_type *)malloc(sizeof(arg_type));
 
         int arg_size; 
         memcpy(&arg_size, buffer + deserialize_offset, sizeof(int));
-        printf("index %i, arg size is %i, \n", i, arg_size);
         deserialize_offset += sizeof(int);
 
         void *arg_val;
         memcpy(arg_val, buffer + deserialize_offset, arg_size);
-        printf("index %i, arg val is %i, \n", i, *(int *)arg_val);
         deserialize_offset += arg_size;
 
         current->arg_size = arg_size;
+	printf("Set current arg size to %i\n", current->arg_size);
         current->arg_val = arg_val;        
+	printf("Set current arg value to %i\n", *(int *)current->arg_val);
         current->next = head;
         head = current;
+    }
+
+    current = head;
+    printf("Printing the list.\n");
+    while(current){
+	printf("The memory address of current is %x\n", &current);
+	printf("arg size %i \n", current->arg_size);
+	printf("arg val %i \n", *(int *)current->arg_val);
+	current = current->next;
     }
 
     return ret;
