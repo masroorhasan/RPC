@@ -127,13 +127,13 @@ extern bool register_procedure(const char *procedure_name,
 }
 
 return_type deserializeBuffer(unsigned char *buffer) {
-  
+
     return_type ret;
     int deserialize_proc_size;
     int deserialize_nparams;
     int deserialize_offset = 0;
 
-    //extract proc name size 
+    //extract proc name size
     memcpy(&deserialize_proc_size, buffer, sizeof(int));
     deserialize_offset += sizeof(int);
     printf("deserialize proc size: %i\n", deserialize_proc_size);
@@ -151,15 +151,12 @@ return_type deserializeBuffer(unsigned char *buffer) {
 
     //extract params
     arg_type *current, *head;
-    
-    head = 0;
-    current = head;
+
+    head = current;
 
     int i = 0;
     for(; i < deserialize_nparams; i++) {
-        current = (arg_type *)malloc(sizeof(arg_type));
-
-        int arg_size; 
+        int arg_size;
         memcpy(&arg_size, buffer + deserialize_offset, sizeof(int));
         deserialize_offset += sizeof(int);
 
@@ -168,17 +165,15 @@ return_type deserializeBuffer(unsigned char *buffer) {
         deserialize_offset += arg_size;
 
         current->arg_size = arg_size;
-	    printf("Set current arg size to %i\n", current->arg_size);
-        current->arg_val = arg_val;        
-	    printf("Set current arg value to %i\n", *(int *)current->arg_val);
-	
-	    current->next = head;
-        head = current;
+        current->arg_val = arg_val;
+
+        current->next = (arg_type*)malloc(sizeof(arg_type));
+        current = current->next;
     }
-    current = head;
+
+
     printf("Printing the list.\n");
-    while(current != 0){
-    	printf("The memory address of current is %x\n", &current);
+    while(current != NULL){
     	printf("arg size %i \n", current->arg_size);
     	printf("arg val %i \n", *(int *)current->arg_val);
     	current = current->next;
@@ -201,7 +196,7 @@ void serializeSendBuffer(unsigned char *buffer, return_type ret)
 {
     int idx = 0;
     int ret_size = ret.return_size;
-    void *ret_val = ret.return_val; 
+    void *ret_val = ret.return_val;
     printf("serializing procedure result to send back to client\n");
 
     printf("ret_size passed in: %i\n", ret_size);
