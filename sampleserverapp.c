@@ -254,7 +254,6 @@ void launch_server() {
 	       return_type ret = deserializeBuffer(receiveBuffer);
 	       //serializeSendBuffer(receiveBuffer, ret);
             //take result and sendto() client
-
         }
 	    printf("Sending to client..\n");
         //sendto(socket, "Warren",  strlen("Warren"), 0, (struct sockaddr *)&remoteAddress, remoteAddressLength);

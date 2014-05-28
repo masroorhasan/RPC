@@ -116,10 +116,23 @@ int serializeData(const char *procedure_name, int nparams, va_list valist, char 
         memcpy(buffer + serialize_offset, &param_size, sizeof(int));
         serialize_offset += sizeof(int);
 
+<<<<<<< HEAD
         void *param_val = va_arg(valist, void*);
 	      printf("index %i, param val %i \n", i, *(int *)param_val);
         memcpy(buffer + serialize_offset, param_val, param_size);
         serialize_offset += param_size;
+=======
+	int i;
+
+  for(i = 0; i < nparams*2; i++){
+    if(i%2 == 0){
+      ptr.arg_size = va_arg(valist, int);
+    } else {
+      ptr.arg_val = va_arg(valist, void*);
+      printf("val: %i \n", *(int *)(ptr.arg_val));
+      list.next = &ptr;
+      list = ptr;
+>>>>>>> 35f4c119902bd3e7794ae3b2cdce752c588ad3c4
     }
 
     return serialize_offset;
@@ -191,7 +204,6 @@ extern return_type make_remote_call(const char *servernameorip,
       0, (struct sockaddr *)&serverAddress,
         &lengthOfServerAddress);
 
-
     // Print message from server
     if(receivedMessage > 0) {
       printf("Received %d bytes\n", receivedMessage);
@@ -203,7 +215,6 @@ extern return_type make_remote_call(const char *servernameorip,
     close(socket);
 
     printf("Program execution complete. \n");
-    
     return ret;
 }
 
