@@ -217,30 +217,46 @@ void serializeSendBuffer(unsigned char *buffer, return_type ret)
  * with the server stub. */
 void launch_server() {
 
-    int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
-    bindSocket(&socket);
+    // int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
+    // bindSocket(&socket);
 
+    struct sockaddr_in serveraddress;
     struct sockaddr_in remoteAddress;
     socklen_t remoteAddressLength = sizeof(remoteAddress);
 
     unsigned char receiveBuffer[BUFSIZE];
-    int receivedSize;
+    int receivedSize;      
+
+    /* create a UDP socket */
+    // int socket = socket(AF_INET, SOCK_DGRAM, 0);
+    int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
+    memset((char *)&serveraddress, 0, sizeof(serveraddress));
+    serveraddress.sin_family = AF_INET;
+    serveraddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    serveraddress.sin_port = htons(0);
+    mybind(socket, (struct sockaddr *)&serveraddress);
+    
+    int currentport = ntohs(serveraddress.sin_port);
+    
+    /* let client know which port to send message to */
+    printf("this application is using port: %d \n", currentport);
 
     for (;;) {
-        receivedSize = recvfrom(socket, receiveBuffer, BUFSIZE,
+        memset(receiveBuffer, 0, sizeof(receiveBuffer));
+        receivedSize = recvfrom(socket, (void *)receiveBuffer, BUFSIZE,
             0, (struct sockaddr *)&remoteAddress, &remoteAddressLength);
 
         printf("Received %d bytes\n", receivedSize);
 
         if (receivedSize > 0) {
-            receiveBuffer[receivedSize] = 0;
+            // receiveBuffer[receivedSize] = 0;
             //deserialize rcvbuffer, return proc_name and args
 	       return_type ret = deserializeBuffer(receiveBuffer);
 	       //serializeSendBuffer(receiveBuffer, ret);
             //take result and sendto() client
 
         }
-	printf("Sending to client..\n");
+	    printf("Sending to client..\n");
         //sendto(socket, "Warren",  strlen("Warren"), 0, (struct sockaddr *)&remoteAddress, remoteAddressLength);
     }
 
