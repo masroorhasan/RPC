@@ -150,8 +150,6 @@ return_type deserializeBuffer(unsigned char *buffer) {
     deserialize_offset += sizeof(int);
     printf("deserialize: The fifth thing from the buffer is %i\n", deserialize_nparams);
 
-    //unsigned char* buff = buffer+deserialize_offset;
-
     //linked list
     arg_type *head = (arg_type*)malloc(sizeof(arg_type));
     arg_type *current = head;
@@ -161,16 +159,14 @@ return_type deserializeBuffer(unsigned char *buffer) {
         memcpy(&arg_size, buffer + deserialize_offset, sizeof(int));
         printf("index %i, arg size: %i\n", i, arg_size);
         deserialize_offset += sizeof(int);
-	//buff += sizeof(int);
-        
-	//void *arg_val;
-	unsigned char *arg_val = (unsigned char*)malloc(arg_val);
+
+        void *arg_val;
         memcpy(arg_val, buffer + deserialize_offset, arg_size);
         printf("index %i, arg val: %i\n", i, *(int *)arg_val);
         deserialize_offset += arg_size;
 
         current->arg_size = arg_size;
-        current->arg_val = (void *)arg_val;
+        current->arg_val = arg_val;
         
         arg_type *ptr = (arg_type*)malloc(sizeof(arg_type));
         ptr->next = NULL;
