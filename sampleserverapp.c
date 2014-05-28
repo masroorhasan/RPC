@@ -152,7 +152,6 @@ return_type deserializeBuffer(unsigned char *buffer) {
 /*
     //extract params
     arg_type *current, *head;
-
     head = current;
 
     int i = 0;
@@ -191,6 +190,31 @@ return_type deserializeBuffer(unsigned char *buffer) {
     printf("return val %i \n", *(int *)ret.return_val);
     free(buffer);	
 */
+
+    //linked list
+    arg_type *head = (arg_type*)malloc(sizeof(arg_type));
+    arg_type *current = head;
+    int i = 0;
+    for (; i < deserialize_nparams; i++) {
+        int arg_size;
+        memcpy(&arg_size, buffer + deserialize_offset, sizeof(int));
+        printf("index %i, arg size: %i\n", i, arg_size);
+        deserialize_offset += sizeof(int);
+
+        void *arg_val;
+        memcpy(arg_val, buffer + deserialize_offset, arg_size);
+        printf("index %i, arg val: %i\n", i, *(int *)arg_val);
+        deserialize_offset += arg_size;
+
+        current->arg_size = arg_size;
+        current->arg_val = arg_val;
+        
+        arg_type *ptr = (arg_type*)malloc(sizeof(arg_type));
+        ptr->next = NULL;
+        current->next = ptr;
+        current = ptr;
+    }
+
     return ret;
 }
 
