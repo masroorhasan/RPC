@@ -149,7 +149,7 @@ return_type deserializeBuffer(unsigned char *buffer) {
     memcpy(&deserialize_nparams, buffer + deserialize_offset, sizeof(int));
     deserialize_offset += sizeof(int);
     printf("deserialize: The fifth thing from the buffer is %i\n", deserialize_nparams);
-
+/*
     //extract params
     arg_type *current, *head;
 
@@ -190,6 +190,7 @@ return_type deserializeBuffer(unsigned char *buffer) {
 
     printf("return val %i \n", *(int *)ret.return_val);
     free(buffer);	
+*/
     return ret;
 }
 
@@ -256,9 +257,9 @@ void launch_server() {
 	      // return_type ret = deserializeBuffer(receiveBuffer);
 	//char *addr = inet_ntoa(remoteAddress.sin_addr);
 	//	printf("addr: %s\n", addr);
-	       return_type ret = deserializeBuffer(receiveBuffer);
+	       deserializeBuffer(receiveBuffer);
 //	       serializeSendBuffer(receiveBuffer, ret);
-	char *addr = inet_ntoa(remoteAddress.sin_addr);
+//	char *addr = inet_ntoa(remoteAddress.sin_addr);
             //take result and sendto() client
         }
 
@@ -268,7 +269,7 @@ void launch_server() {
 	//printf("Remote address: %s", inet_ntoa(remoteAddress.sin_addr));
 	//printf("%s:%d of addr length %d\n",inet_ntoa(remoteAddress.sin_addr),remoteAddress.sin_port,remoteAddressLength);
         //printf("Calling sendto()..\n");
-	//sendto(socket, "Warren", (sizeof(char)*strlen("Warren")), 0, (struct sockaddr *)&remoteAddress, remoteAddressLength);
+	sendto(socket, "Warren", (sizeof(char)*strlen("Warren")), 0, (struct sockaddr *)&remoteAddress, remoteAddressLength);
 
     }
 

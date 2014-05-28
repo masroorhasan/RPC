@@ -199,7 +199,7 @@ extern return_type make_remote_call(const char *servernameorip,
       //ret = deserializeRcvBuffer(rcvbuffer);
     }
 
-    close(socket);
+   // close(socket);
 
     printf("Program execution complete. \n");
     return ret;
