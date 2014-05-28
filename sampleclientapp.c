@@ -185,6 +185,7 @@ extern return_type make_remote_call(const char *servernameorip,
     
     return_type ret;
 
+    memset(buffer, 0, sizeof(buffer));
     socklen_t lengthOfServerAddress = sizeof(serverAddress);
     int receivedMessage = recvfrom(socket, buffer, sizeof(buffer),
       0, (struct sockaddr *)&serverAddress,
@@ -207,7 +208,7 @@ extern return_type make_remote_call(const char *servernameorip,
 int main() {
     int a = -10, b = 20;
     return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
-      10000,
+      10001,
       "addtwo", 2,
       sizeof(int), (void *)(&a),
       sizeof(int), (void *)(&b));
