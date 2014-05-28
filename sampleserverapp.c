@@ -127,7 +127,8 @@ extern bool register_procedure(const char *procedure_name,
 }
 
 return_type deserializeBuffer(unsigned char *buffer) {
-  
+    printf("deserializeBuffer");
+ 
     return_type ret;
     int deserialize_proc_size;
     int deserialize_nparams;
@@ -193,10 +194,10 @@ return_type deserializeBuffer(unsigned char *buffer) {
     }
 
     printf("return val %i \n", *(int *)ret.return_val);
-
+    free(buffer);	
     return ret;
 }
-/*
+
 void serializeSendBuffer(unsigned char *buffer, return_type ret)
 {
     int idx = 0;
@@ -215,7 +216,7 @@ void serializeSendBuffer(unsigned char *buffer, return_type ret)
     printf("return val %i \n", *(int *)buffer+idx);
     idx += ret_size;
 }
-*/
+
 
 /* launch_server() -- used by the app programmer's server code to indicate that
  * it wants start receiving rpc invocations for functions that it registered
@@ -225,10 +226,12 @@ void launch_server() {
     int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
     bindSocket(&socket);
 
-    struct sockaddr_in remoteAddress;
+    struct sockaddr_in remoteAddress = {0};
     socklen_t remoteAddressLength = sizeof(remoteAddress);
+//    int remoteAddressLength = sizeof(remoteAddress);
 
-    unsigned char receiveBuffer[BUFSIZE];
+   // char *receiveBuffer[BUFSIZE];
+    char *receiveBuffer = malloc(BUFSIZE);
     int receivedSize;
 
     for (;;) {
@@ -240,13 +243,24 @@ void launch_server() {
         if (receivedSize > 0) {
             receiveBuffer[receivedSize] = 0;
             //deserialize rcvbuffer, return proc_name and args
+	      // return_type ret = deserializeBuffer(receiveBuffer);
+	//char *addr = inet_ntoa(remoteAddress.sin_addr);
+	//	printf("addr: %s\n", addr);
 	       return_type ret = deserializeBuffer(receiveBuffer);
-	       //serializeSendBuffer(receiveBuffer, ret);
+//	       serializeSendBuffer(receiveBuffer, ret);
+	char *addr = inet_ntoa(remoteAddress.sin_addr);
             //take result and sendto() client
-
         }
+
+//	memset(receiveBuffer, 0, sizeof(receiveBuffer));
 	printf("Sending to client..\n");
-        //sendto(socket, "Warren",  strlen("Warren"), 0, (struct sockaddr *)&remoteAddress, remoteAddressLength);
+
+	//printf("Remote address: %s", inet_ntoa(remoteAddress.sin_addr));
+	//printf("%s:%d of addr length %d\n",inet_ntoa(remoteAddress.sin_addr),remoteAddress.sin_port,remoteAddressLength);
+        //printf("Calling sendto()..\n");
+	//sendto(socket, "Warren", (sizeof(char)*strlen("Warren")), 0, (struct sockaddr *)&remoteAddress, remoteAddressLength);
+
+
     }
 
 }
