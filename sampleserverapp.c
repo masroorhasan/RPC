@@ -130,8 +130,8 @@ return_type deserializeBuffer(unsigned char *buffer) {
     printf("deserializeBuffer");
  
     return_type ret;
-    int deserialize_proc_size;
-    int deserialize_nparams;
+    int deserialize_proc_size = 0;
+    int deserialize_nparams = 0;
     int deserialize_offset = 0;
 
     //extract proc name size
@@ -149,36 +149,55 @@ return_type deserializeBuffer(unsigned char *buffer) {
     memcpy(&deserialize_nparams, buffer + deserialize_offset, sizeof(int));
     deserialize_offset += sizeof(int);
     printf("deserialize: The fifth thing from the buffer is %i\n", deserialize_nparams);
-/*
-    //extract params
-    arg_type *current, *head;
-    head = current;
 
+    unsigned char* buff = buffer+deserialize_offset;
+
+    //linked list
+    arg_type *head = (arg_type*)malloc(sizeof(arg_type));
+    arg_type *current = head;
     int i = 0;
-    for(; i < deserialize_nparams; i++) {
-        int arg_size;
-        memcpy(&arg_size, buffer + deserialize_offset, sizeof(int));
-        deserialize_offset += sizeof(int);
-
+    for (; i < deserialize_nparams; i++) {
+        int arg_size = *(int *)buff;
+        //memcpy(&arg_size, buffer + deserialize_offset, sizeof(int));
+        printf("index %i, arg size: %i\n", i, arg_size);
+        //deserialize_offset += sizeof(int);
+	buff += sizeof(int);
+	/*
         void *arg_val;
         memcpy(arg_val, buffer + deserialize_offset, arg_size);
+        printf("index %i, arg val: %i\n", i, *(int *)arg_val);
         deserialize_offset += arg_size;
+	*/
+	
+	unsigned char *arg_val = (unsigned char*)malloc(arg_val);
+	//memcpy(arg_val, buffer + deserialize_offset, arg_size);	
+        printf("index %i, arg val: %i\n", i, *(int *)arg_val);
+	//deserialize_offset += arg_size;
+	int j = 0;
+	for(; j < arg_val; j++){
+	    //arg_val[j] = buff[j];
+	    printf("%i\n", *(int *)buff);
+	}
+	
+        printf("index %i, arg val: %i\n", i, *(int *)arg_val);
+	deserialize_offset += arg_size;
 
         current->arg_size = arg_size;
-        current->arg_val = arg_val;
+        current->arg_val = (void *)arg_val;
+        
+        arg_type *ptr = (arg_type*)malloc(sizeof(arg_type));
+        ptr->next = NULL;
+        current->next = ptr;
+        current = ptr;
 
-        current->next = (arg_type*)malloc(sizeof(arg_type));
-        current = current->next;
+	buff += arg_size;
     }
 
+    int n = *(int *)(head->arg_val);
+    int m = *(int *)(head->next->arg_val);
 
-    printf("Printing the list.\n");
-    while(current != NULL){
-    	printf("arg size %i \n", current->arg_size);
-    	printf("arg val %i \n", *(int *)current->arg_val);
-    	current = current->next;
-    }
-
+    printf("n %i\n", n); 
+    printf("m %i\n", m); 
     i = 0;
     for(; i < TABLE_SIZE; i++){
         if(strcmp(proc_table[i].proc_name, deserialize_proc_name) == 0){
@@ -186,35 +205,8 @@ return_type deserializeBuffer(unsigned char *buffer) {
             break;
         }
     }
-
+    free(head);
     printf("return val %i \n", *(int *)ret.return_val);
-    free(buffer);	
-*/
-
-    //linked list
-    arg_type *head = (arg_type*)malloc(sizeof(arg_type));
-    arg_type *current = head;
-    int i = 0;
-    for (; i < deserialize_nparams; i++) {
-        int arg_size;
-        memcpy(&arg_size, buffer + deserialize_offset, sizeof(int));
-        printf("index %i, arg size: %i\n", i, arg_size);
-        deserialize_offset += sizeof(int);
-
-        void *arg_val;
-        memcpy(arg_val, buffer + deserialize_offset, arg_size);
-        printf("index %i, arg val: %i\n", i, *(int *)arg_val);
-        deserialize_offset += arg_size;
-
-        current->arg_size = arg_size;
-        current->arg_val = arg_val;
-        
-        arg_type *ptr = (arg_type*)malloc(sizeof(arg_type));
-        ptr->next = NULL;
-        current->next = ptr;
-        current = ptr;
-    }
-
     return ret;
 }
 
@@ -233,7 +225,7 @@ void serializeSendBuffer(unsigned char *buffer, return_type ret)
     idx += sizeof(int);
 
     memcpy(buffer+idx, ret_val, ret_size);
-    printf("return val %i \n", *(int *)buffer+idx);
+    printf("return val %i \n", *(int *)(buffer+idx));
     idx += ret_size;
 }
 
@@ -278,22 +270,19 @@ void launch_server() {
         if (receivedSize > 0) {
             // receiveBuffer[receivedSize] = 0;
             //deserialize rcvbuffer, return proc_name and args
-	      // return_type ret = deserializeBuffer(receiveBuffer);
-	//char *addr = inet_ntoa(remoteAddress.sin_addr);
-	//	printf("addr: %s\n", addr);
-	       deserializeBuffer(receiveBuffer);
-//	       serializeSendBuffer(receiveBuffer, ret);
-//	char *addr = inet_ntoa(remoteAddress.sin_addr);
-            //take result and sendto() client
+	       return_type ret = deserializeBuffer(receiveBuffer);
+	       memset(receiveBuffer, 0, sizeof(receiveBuffer));
+	       serializeSendBuffer(receiveBuffer, ret);
         }
 
-//	memset(receiveBuffer, 0, sizeof(receiveBuffer));
+
 	printf("Sending to client..\n");
 
 	//printf("Remote address: %s", inet_ntoa(remoteAddress.sin_addr));
 	//printf("%s:%d of addr length %d\n",inet_ntoa(remoteAddress.sin_addr),remoteAddress.sin_port,remoteAddressLength);
         //printf("Calling sendto()..\n");
-	sendto(socket, "Warren", (sizeof(char)*strlen("Warren")), 0, (struct sockaddr *)&remoteAddress, remoteAddressLength);
+	sendto(socket, receiveBuffer, sizeof(receiveBuffer), 0, (struct sockaddr *)&remoteAddress, remoteAddressLength);
+        memset(receiveBuffer, 0, sizeof(receiveBuffer));
 
     }
 
