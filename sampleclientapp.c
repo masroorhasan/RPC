@@ -191,7 +191,6 @@ extern return_type make_remote_call(const char *servernameorip,
       0, (struct sockaddr *)&serverAddress,
         &lengthOfServerAddress);
 
-
     // Print message from server
     if(receivedMessage > 0) {
       printf("Received %d bytes\n", receivedMessage);
@@ -203,7 +202,6 @@ extern return_type make_remote_call(const char *servernameorip,
     close(socket);
 
     printf("Program execution complete. \n");
-    
     return ret;
 }
 
