@@ -12,7 +12,7 @@ int ret_int;
 return_type r;
 
 unsigned char *serialize_int(unsigned char *buffer, int value);
-
+/*
 struct functiondatabase {
     const char *procedurename;
 	int numofparams;
@@ -21,13 +21,27 @@ struct functiondatabase {
 
 struct functiondatabase fdb[100];
 int fpnextavailspace = 0;
-const int clientport = 10549;
+*/
+
+//database of function pointers
+struct proc_map {
+    char *proc_name;
+    int n_params;
+    fp_type fp;
+};
+
+#define TABLE_SIZE 10
+struct proc_map proc_table[TABLE_SIZE];
+int index_to_insert = 0;
+
+const int clientport = 10069;
+/*
 bool register_procedure(const char *procedure_name, const int nparams, fp_type fnpointer) {
 	int i;
 	for (i = 0; i < fpnextavailspace; i++)
 	{
 		int a = strcmp(fdb[i].procedurename, procedure_name);
-		/* function is already in the database and it is not an overload*/
+		
 		if(a == 0 && nparams == fdb[i].numofparams) {
 			return false;
 		}
@@ -38,6 +52,34 @@ bool register_procedure(const char *procedure_name, const int nparams, fp_type f
 	fdb[fpnextavailspace].fp = fnpointer;
 	fpnextavailspace++;
 	return true;
+}
+*/
+
+extern bool register_procedure(const char *procedure_name,
+                    const int nparams, fp_type fnpointer)
+{
+    //define array (db) to store fp's
+    //put procedure_name as fp in an array of fp's
+    if(procedure_name == NULL) return false;
+    if(nparams < 2) return false;
+    if(index_to_insert > TABLE_SIZE) return false;
+
+    //register function in proc_table
+    //db looked up by name, i.e. procedure_name
+    int i = 0;
+    for(; i < TABLE_SIZE; i++) {
+        if((strcmp(proc_table[i].proc_name, procedure_name) == 0) 
+                && (proc_table[i].n_params == nparams) )
+            return false;
+    }
+
+    proc_table[index_to_insert].proc_name = procedure_name;
+    proc_table[index_to_insert].n_params = nparams;
+    proc_table[index_to_insert].fp = fnpointer;
+
+    index_to_insert += 1;
+
+    return true;
 }
 
 void launch_server() {
@@ -86,10 +128,10 @@ void launch_server() {
 			/* find the function with linear search */
 			fp_type myfp;
 			int foundfunc = 0;
-			for (i = 0; i < fpnextavailspace; i++) {
-				int a = strcmp(fdb[i].procedurename, receivedfuncname);
-				if (a == 0 && fdb[i].numofparams == numofargs) {
-					myfp = fdb[i].fp;
+			for (i = 0; i < TABLE_SIZE; i++) {
+				int a = strcmp(proc_table[i].proc_name, receivedfuncname);
+				if (a == 0 && proc_table[i].n_params == numofargs) {
+					myfp = proc_table[i].fp;
 					foundfunc = 1;
 				}
 			}
