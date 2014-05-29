@@ -37,8 +37,6 @@ return_type add(const int nparams, arg_type* a) {
     int i = *(int *)(a->arg_val);
     int j = *(int *)(a->next->arg_val);
 
-    printf("i is %d , j is %d \n", i, j);
-
     ret_int = i+j;
     r.return_val = (void *)(&ret_int);
     r.return_size = sizeof(int);

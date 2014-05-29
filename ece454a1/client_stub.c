@@ -110,15 +110,12 @@ return_type make_remote_call(const char *servernameorip,
         // Put argument in buffer
         void *arg = va_arg(var_args, void *);
         unsigned char *char_arg = (unsigned char*)arg;
-        printf("Serializing argument: %d \n", *(int*)char_arg);
 
         int j = 0;
         while (j < arg_size) {
             serial_result[j] = char_arg[j];
             j++;
         }
-
-        printf("Sending argument: %d \n", *(int*)serial_result);
 
         serial_result = serial_result + arg_size;
         i++;
