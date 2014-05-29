@@ -17,6 +17,7 @@
 #include <netdb.h>
 
 const int client_port = 10069;
+const int buffer_size = 512;
 
 /**
  * Serializes int values into a character buffer.
@@ -74,7 +75,7 @@ return_type make_remote_call(const char *servernameorip,
      * [argumentSize | argument]
      */
 
-    unsigned char buffer[512];
+    unsigned char buffer[buffer_size];
     memset(buffer, 0, sizeof(buffer));
 
 	// Pack function name and size in buffer
@@ -83,9 +84,10 @@ return_type make_remote_call(const char *servernameorip,
     unsigned char *function_name = (unsigned char*)procedure_name;
 
     int i = 0;
-    for (i = 0; i < function_name_size; i++) {
-  		serial_result[i] = function_name[i];
-  	}
+    while (i < function_name_size) {
+        serial_result[i] = function_name[i];
+        i++;
+    }
 
   	serial_result = serial_result + function_name_size;
   	serial_result = int_serialize(serial_result, nparams);
@@ -93,8 +95,9 @@ return_type make_remote_call(const char *servernameorip,
 	// Pack argument size and argument in buffer
     va_list var_args;
     va_start(var_args, nparams);
-    for (i = 0; i < nparams; i++) {
+    i = 0;
 
+    while (i < nparams) {
         // Put argument size in buffer
     	int arg_size = va_arg(var_args, int);
 		serial_result = int_serialize(serial_result, arg_size);
@@ -104,13 +107,15 @@ return_type make_remote_call(const char *servernameorip,
     	unsigned char *char_arg = (unsigned char*)arg;
 		printf("Serializing argument: %d \n", *(int*)char_arg);
 
-        int j;
-		for (j = 0; j < arg_size; j++) {
+        int j = 0;
+        while (j < arg_size) {
 			serial_result[j] = char_arg[j];
+            j++;
 		}
 		printf("Sending argument: %d \n", *(int*)serial_result);
 
 		serial_result = serial_result + arg_size;
+        i++;
     }
 
     va_end(var_args);
@@ -127,7 +132,7 @@ return_type make_remote_call(const char *servernameorip,
 	struct sockaddr_in remote_address;
     socklen_t addrlen = sizeof(remote_address);
 
-	unsigned char receive_buffer[512];
+	unsigned char receive_buffer[buffer_size];
 	while (1) {
 		int receive_length = recvfrom(client_socket, (void *)receive_buffer, sizeof(receive_buffer),
 			0, (struct sockaddr *)&remote_address, &addrlen);
@@ -138,10 +143,11 @@ return_type make_remote_call(const char *servernameorip,
             int return_size = *(int*)receive_buffer;
             unsigned char return_value[return_size];
             
-            int k;
-			for (k = 0; k < return_size; k++) {
+            int k = 0;
+            while (k < return_size) {
 				return_value[k] = return_value_buffer[k];
-			}
+			    k++;
+            }
 
 			return_type rt;
 			memset((unsigned char *)&rt, 0, sizeof(rt));
@@ -154,7 +160,7 @@ return_type make_remote_call(const char *servernameorip,
 }
 
 int main() {
-    int a = 27, b = 91;
+    int a = -10, b = 20;
     return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
 	                               10004, "addtwo", 2,
 	                               sizeof(int), (void *)(&a),
