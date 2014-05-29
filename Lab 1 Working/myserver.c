@@ -12,7 +12,7 @@ int ret_int;
 return_type r;
 
 unsigned char *serialize_int(unsigned char *buffer, int value);
-/*
+
 struct functiondatabase {
     const char *procedurename;
 	int numofparams;
@@ -21,8 +21,8 @@ struct functiondatabase {
 
 struct functiondatabase fdb[100];
 int fpnextavailspace = 0;
-*/
 
+/*
 //database of function pointers
 struct proc_map {
     char *proc_name;
@@ -33,9 +33,9 @@ struct proc_map {
 #define TABLE_SIZE 10
 struct proc_map proc_table[TABLE_SIZE];
 int index_to_insert = 0;
-
+*/
 const int clientport = 10069;
-/*
+
 bool register_procedure(const char *procedure_name, const int nparams, fp_type fnpointer) {
 	int i;
 	for (i = 0; i < fpnextavailspace; i++)
@@ -53,8 +53,8 @@ bool register_procedure(const char *procedure_name, const int nparams, fp_type f
 	fpnextavailspace++;
 	return true;
 }
-*/
 
+/*
 extern bool register_procedure(const char *procedure_name,
                     const int nparams, fp_type fnpointer)
 {
@@ -81,7 +81,7 @@ extern bool register_procedure(const char *procedure_name,
 
     return true;
 }
-
+*/
 void launch_server() {
 	
 	struct sockaddr_in serveraddress;      
@@ -128,6 +128,7 @@ void launch_server() {
 			/* find the function with linear search */
 			fp_type myfp;
 			int foundfunc = 0;
+			/*
 			for (i = 0; i < TABLE_SIZE; i++) {
 				int a = strcmp(proc_table[i].proc_name, receivedfuncname);
 				if (a == 0 && proc_table[i].n_params == numofargs) {
@@ -135,7 +136,16 @@ void launch_server() {
 					foundfunc = 1;
 				}
 			}
-			
+			*/
+
+			for(i = 0; i < fpnextavailspace; i++){
+				if(strcmp(fdb[i].procedurename, receivedfuncname) == 0 &&
+						fdb[i].numofparams == numofargs){
+					myfp = fdb[i].fp;
+					foundfunc = 1;
+				}
+			}
+
 			/* if a remote function call is identified and the corresponding
 			 * function is found in the database then
 			 * make the call then return the answer */ 
