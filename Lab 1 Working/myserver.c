@@ -11,8 +11,6 @@
 int ret_int;
 return_type r;
 
-unsigned char *serialize_int(unsigned char *buffer, int value);
-
 struct proc_map_db {
     const char *proc_name;
 	int n_params;
@@ -23,6 +21,36 @@ struct proc_map_db proc_db[100];
 int proc_db_index = 0;
 
 const int clientport = 10069;
+
+int create_socket(const int domain, const int type, const int protocol) {
+
+    int socketDescriptor = socket(domain, type, protocol);
+
+    if (socketDescriptor == -1) {
+        perror("Failed to create socket.");
+        exit(0);
+    }
+
+    printf("Created socket.\n");
+    return socketDescriptor;
+}
+
+void bind_socket(int socket) {
+
+    struct sockaddr_in myAddress;
+
+    memset((char *)&myAddress, 0, sizeof(myAddress));
+    myAddress.sin_family = AF_INET;
+    myAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    myAddress.sin_port = htons(0);
+    // Assign port
+    if(mybind(socket, (struct sockaddr_in*)&myAddress) < 0 ) {
+        perror("Could't bind port to socket.");
+        exit(0);
+    }
+
+    printf("Binded socket to port: %i \n", ntohs(myAddress.sin_port));
+}
 
 bool register_procedure(const char *procedure_name, const int nparams, fp_type fnpointer) {
 	int i = 0;
@@ -56,27 +84,18 @@ void launch_server() {
 	struct sockaddr_in serv_addr;      
     struct sockaddr_in remote_addr;     
     socklen_t addr_len = sizeof(remote_addr);         
-    int received_size;                   
-    int sock;                        
-    unsigned char buffer[512];
+    int socket;                        
 	
     /* create a UDP socket */
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
-    memset((char *)&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serv_addr.sin_port = htons(0);
-    mybind(sock, ((struct sockaddr_in *)&serv_addr));
-	
-	int port_curr = ntohs(serv_addr.sin_port);
-	
-	/* let client know which port to send message to */
-	printf("this application is using port: %d \n", port_curr);
-	
+    socket = create_socket(AF_INET, SOCK_DGRAM, 0);
+    bind_socket(socket);
+
+	int received_size;
+	unsigned char buffer[512];
     /* listening on port for client message */
     for (;;) {
 		memset(buffer, 0, sizeof(buffer));
-        received_size = recvfrom(sock, (void *)buffer, sizeof(buffer), 
+        received_size = recvfrom(socket, (void *)buffer, sizeof(buffer), 
 			0, (struct sockaddr *)&remote_addr, &addr_len);
         if (received_size > 0) {
 			int proc_size = *(int*)buffer;
@@ -147,7 +166,7 @@ void launch_server() {
 					tmp[k] = castedarg[k];
 				}
 				
-				sendto(sock, send_buf, sizeof(send_buf), 0, (struct sockaddr *)&remote_addr, addr_len);
+				sendto(socket, send_buf, sizeof(send_buf), 0, (struct sockaddr *)&remote_addr, addr_len);
 			}
         }
     }
