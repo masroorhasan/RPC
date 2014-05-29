@@ -145,7 +145,7 @@ return_type deserialize(unsigned char * buffer){
     fp_type fp;
     arg_type *arg_list;
     int proc_found = 0;
-    
+
     i = 0;
     while (i < proc_db_index){
         if(strcmp(proc_db[i].proc_name, recv_proc_name) == 0 &&
@@ -168,7 +168,7 @@ return_type deserialize(unsigned char * buffer){
         while (i < recv_num_args) {
             int recv_arg_size = *(int *)aliased_buff;
             aliased_buff += sizeof(int);
-            
+
             unsigned char *recv_arg_val = (unsigned char*)malloc(sizeof(recv_arg_size));
 
             int j = 0;
@@ -245,7 +245,7 @@ void launch_server() {
 }
 
 return_type add(const int nparams, arg_type* a) {
-    
+
     if(nparams != 2) {
         /* Error! */
         r.return_val = NULL;
