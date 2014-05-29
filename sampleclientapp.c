@@ -129,18 +129,20 @@ return_type deserializeRcvBuffer(unsigned char* buffer){
     printf("Deserializing rcv buffer from server\n");
 
     int ret_size;
-    void *ret_val;
+//    void *ret_val;
     int idx = 0;
 
     memcpy(&ret_size, buffer, sizeof(int));
     idx += sizeof(int);
 
+    unsigned char *ret_val = (char *)malloc(ret_size);
     memcpy(ret_val, buffer, ret_size);
+    printf("pringting value %i\n", *(int *)buffer);
     idx += ret_size;
 
     return_type ret;
     ret.return_size = ret_size;
-    ret.return_val = ret_val;
+    ret.return_val = (void *)ret_val;
 
     printf("return size: %i\n", ret_size);
     printf("return val: %i\n", *(int *)ret_val);
@@ -188,7 +190,8 @@ extern return_type make_remote_call(const char *servernameorip,
 
     memset(buffer, 0, sizeof(buffer));
     socklen_t lengthOfServerAddress = sizeof(serverAddress);
-    int receivedMessage = recvfrom(socket, buffer, sizeof(buffer),
+    unsigned char* buff = (char *)malloc(512);
+    int receivedMessage = recvfrom(socket, buff, sizeof(buff),
       0, (struct sockaddr *)&serverAddress,
         &lengthOfServerAddress);
 
@@ -199,7 +202,7 @@ extern return_type make_remote_call(const char *servernameorip,
       printf("Client received message: \"%s\"\n", buffer);
       memset(buffer, 0, sizeof(buffer));
 
-      ret = deserializeRcvBuffer(buffer);
+      ret = deserializeRcvBuffer(buff);
     }
 
    // close(socket);

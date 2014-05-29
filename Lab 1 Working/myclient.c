@@ -9,7 +9,6 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
-
 const int client_port = 10069;
 
 /**
@@ -150,7 +149,7 @@ return_type make_remote_call(const char *servernameorip,
 int main() {
     int a =27, b = 91;
     return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
-	                               10006, "addtwo", 2,
+	                               10004, "addtwo", 2,
 	                               sizeof(int), (void *)(&a),
 	                               sizeof(int), (void *)(&b));
     int result = *(int *)(ans.return_val);
