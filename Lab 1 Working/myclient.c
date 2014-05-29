@@ -1,133 +1,161 @@
-#include <stdio.h>
 #include "ece454rpc_types.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/udp.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include <netdb.h> //hostent
+#include <netinet/in.h>
+#include <netinet/udp.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
-unsigned char *serialize_int(unsigned char *buffer, int value);
-const int port = 10549;
 
+const int client_port = 10069;
+
+/**
+ * Serializes int values into a character buffer.
+ */
+unsigned char *int_serialize(unsigned char *buffer, int value) {
+
+    int shift = 0;
+    const int shift_eight = 8;
+    const int shift_sixteen = 16;
+    const int shift_twentyfour = 24;
+
+    buffer[shift] = value >> shift;
+    buffer[++shift] = value >> shift_eight;
+    buffer[++shift] = value >> shift_sixteen;
+    buffer[++shift] = value >> shift_twentyfour;
+
+    return buffer + shift + 1;
+}
+
+/**
+ * Makes a remote procedure call on the specific server.
+ */
 return_type make_remote_call(const char *servernameorip,
 								const int serverportnumber,
 								const char *procedure_name,
 								const int nparams, ...) {
-	/* create a udp socket and bind it */
 
-	int udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
-	struct sockaddr_in socketaddress;
-	memset((char *)&socketaddress, 0, sizeof(socketaddress));
-	socketaddress.sin_family = AF_INET;
-	socketaddress.sin_addr.s_addr = htonl(INADDR_ANY);
-	socketaddress.sin_port = htons(port);
-	bind(udp_socket, (struct sockaddr *)&socketaddress, sizeof(socketaddress));
-	
-	/* create the server address struct */
-	struct sockaddr_in serveraddress;
-	memset((char *)&serveraddress, 0, sizeof(serveraddress));
-	serveraddress.sin_family = AF_INET;
-	serveraddress.sin_port = htons(serverportnumber);
-	
-	struct hostent *serveripaddress;     
-	serveripaddress = gethostbyname(servernameorip);
-	
-	/* put the host's address into the server address structure */
-	memcpy((void *)&serveraddress.sin_addr, serveripaddress->h_addr_list[0], 
-		serveripaddress->h_length);
-	
-	/* construct the array holding the function information
-	   send a message from client to server */
-		
-	unsigned char buffer[512];
-	memset(buffer, 0, sizeof(buffer));
+    // Create client socket and bind address to it
+    int client_socket = socket(AF_INET, SOCK_DGRAM, 0);
+	struct sockaddr_in client_socket_address;
+	memset((char *)&client_socket_address, 0, sizeof(client_socket_address));
+	client_socket_address.sin_addr.s_addr = htonl(INADDR_ANY);
+	client_socket_address.sin_family = AF_INET;
+    client_socket_address.sin_port = htons(client_port);
+	bind(client_socket, (struct sockaddr *)&client_socket_address, sizeof(client_socket_address));
 
-	/* [size of func name|funcname|size of arg1|arg 1|size of arg 2|arg 2|...] */
+    // Create server address
+	struct sockaddr_in server_socket_address;
+	memset((char *)&server_socket_address, 0, sizeof(server_socket_address));
+	server_socket_address.sin_port = htons(serverportnumber);
+    server_socket_address.sin_family = AF_INET;
 
-	int functionnamesize = sizeof(procedure_name);
-	unsigned char *tmp = serialize_int(buffer, functionnamesize);
-  	
-  	int i;
-  	unsigned char *castedfunctionname = (unsigned char*)procedure_name;
-  	for (i = 0; i < functionnamesize; i++) {
-  		tmp[i] = castedfunctionname[i];
+	// Lookup the server's IP using the hostname provided
+	struct hostent *server_ip_address;
+	server_ip_address = gethostbyname(servernameorip);
+	memcpy((void *)&server_socket_address.sin_addr, server_ip_address->h_addr_list[0],
+		server_ip_address->h_length);
+
+    /**
+     * Pack data into buffer
+     *
+     * Buffer serialization format:
+     * [functionSize | functionName]
+     * [argumentSize | argument]
+     * [argumentSize | argument]
+     */
+
+    unsigned char buffer[512];
+    memset(buffer, 0, sizeof(buffer));
+
+	// Pack function name and size in buffer
+  	int function_name_size = sizeof(procedure_name);
+    unsigned char *serial_result = int_serialize(buffer, function_name_size);
+    unsigned char *function_name = (unsigned char*)procedure_name;
+
+    int i = 0;
+    for (i = 0; i < function_name_size; i++) {
+  		serial_result[i] = function_name[i];
   	}
-  	
-  	tmp = tmp + functionnamesize;
-  	tmp = serialize_int(tmp, nparams);
 
-	va_list va;
-    va_start(va, nparams);
+  	serial_result = serial_result + function_name_size;
+  	serial_result = int_serialize(serial_result, nparams);
+
+	// Pack argument size and argument in buffer
+    va_list var_args;
+    va_start(var_args, nparams);
     for (i = 0; i < nparams; i++) {
-    	/* put size of arg in buffer */
-    	int argsize = va_arg(va, int);
-		tmp = serialize_int(tmp, argsize);
-    	
-    	/* put the arg in buffer */
-    	void *arg = va_arg(va, void *);
-    	unsigned char *castedarg = (unsigned char*)arg;
-		printf("arg being passed: %d \n", *(int*)castedarg);
-    	int j;
-		for (j = 0; j < argsize; j++) {
-			tmp[j] = castedarg[j];
+
+        // Put argument size in buffer
+    	int arg_size = va_arg(var_args, int);
+		serial_result = int_serialize(serial_result, arg_size);
+
+    	// Put argument in buffer
+    	void *arg = va_arg(var_args, void *);
+    	unsigned char *char_arg = (unsigned char*)arg;
+		printf("Serializing argument: %d \n", *(int*)char_arg);
+
+        int j;
+		for (j = 0; j < arg_size; j++) {
+			serial_result[j] = char_arg[j];
 		}
-		printf("arg sending is: %d \n", *(int*)tmp);
+		printf("Sending argument: %d \n", *(int*)serial_result);
 
-		tmp = tmp + argsize;
+		serial_result = serial_result + arg_size;
     }
-    va_end(va);
-	
-	sendto(udp_socket, buffer, sizeof(buffer), 0, 
-		(struct sockaddr *)&serveraddress, sizeof(serveraddress));
-	
-	/* listen for return_val of rpc */
-	struct sockaddr_in remoteaddress;     
-    socklen_t addrlen = sizeof(remoteaddress);      
-	unsigned char recvbuf[512];
-	for (;;) {
-		int recvlen;
-		recvlen = recvfrom(udp_socket, (void *)recvbuf, sizeof(recvbuf), 
-			0, (struct sockaddr *)&remoteaddress, &addrlen);
-		if (recvlen > 0) {
-			int returnsize = *(int*)recvbuf;
-			int k;
-			unsigned char *returnvalbuf = recvbuf + 4;
-			unsigned char returnval[returnsize];
 
-			for (k = 0; k < returnsize; k++) {
-				returnval[k] = returnvalbuf[k];
+    va_end(var_args);
+
+    /**
+     * Make remote procedure call
+     */
+	sendto(client_socket, buffer, sizeof(buffer), 0,
+		(struct sockaddr *)&server_socket_address, sizeof(server_socket_address));
+
+	/**
+     * Listen for the result of remote procedure call
+     */
+	struct sockaddr_in remote_address;
+    socklen_t addrlen = sizeof(remote_address);
+
+	unsigned char receive_buffer[512];
+	while (1) {
+		int receive_length = recvfrom(client_socket, (void *)receive_buffer, sizeof(receive_buffer),
+			0, (struct sockaddr *)&remote_address, &addrlen);
+
+        if (receive_length > 0) {
+			// Got a good message! Woot!
+			int return_size = *(int*)receive_buffer;
+            unsigned char return_value[return_size];
+            unsigned char *return_value_buffer = receive_buffer + 4;
+
+            int k;
+			for (k = 0; k < return_size; k++) {
+				return_value[k] = return_value_buffer[k];
 			}
-			
+
 			return_type rt;
 			memset((unsigned char *)&rt, 0, sizeof(rt));
-			rt.return_size = returnsize;
-			rt.return_val = returnval;
-			
+			rt.return_size = return_size;;
+			rt.return_val = return_value;
+
 			return rt;
 		}
 	}
 }
 
-unsigned char *serialize_int(unsigned char *buffer, int value) {
-	/* Write little-endian int value into buffer */
-	buffer[0] = value >> 0;
-	buffer[1] = value >> 8;
-	buffer[2] = value >> 16;
-	buffer[3] = value >> 24;
-	return buffer + 4;
-}
-int main()
-{
+int main() {
     int a =27, b = 91;
     return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
 	                               10006, "addtwo", 2,
 	                               sizeof(int), (void *)(&a),
 	                               sizeof(int), (void *)(&b));
-    int i = *(int *)(ans.return_val);
-    printf("client, got result: %d\n", i);
+    int result = *(int *)(ans.return_val);
+
+    printf("Client, got result: %d\n", result);
 
     return 0;
 }
