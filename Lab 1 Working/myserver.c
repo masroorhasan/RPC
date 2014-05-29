@@ -25,7 +25,7 @@
 // Database structure to store procedure properties
 struct proc_map_db {
     const char *proc_name;
-	int n_params;
+      int n_params;
     fp_type fp;
 };
 
@@ -78,21 +78,21 @@ void bind_socket(int socket) {
  */
 bool register_procedure(const char *procedure_name, const int nparams, fp_type fnpointer) {
 
-	int i = 0;
-	for (; i < proc_db_index; i++)
-	{
-		if( (strcmp( proc_db[i].proc_name, procedure_name) == 0)
-					&& (nparams == proc_db[i].n_params) ) {
-			return false;
-		}
-	}
+    int i = 0;
+    while (i < proc_db_index){
+        if( (strcmp( proc_db[i].proc_name, procedure_name) == 0)
+            && (nparams == proc_db[i].n_params) ) {
+            return false;
+        }
+        i++;
+    }
 
-	proc_db[proc_db_index].proc_name = procedure_name;
-	proc_db[proc_db_index].n_params = nparams;
-	proc_db[proc_db_index].fp = fnpointer;
-	proc_db_index++;
+    proc_db[proc_db_index].proc_name = procedure_name;
+    proc_db[proc_db_index].n_params = nparams;
+    proc_db[proc_db_index].fp = fnpointer;
+    proc_db_index++;
 
-	return true;
+    return true;
 }
 
 /**
@@ -118,73 +118,84 @@ unsigned char *int_serialize(unsigned char *buffer, int value) {
  */
 return_type deserialize(unsigned char * buffer){
 
-	return_type ret;
+    return_type ret;
 
-	// Gets size of procedure name
-	int proc_size = *(int*)buffer;
-	unsigned char *aliased_buff = buffer + 4;
+    // Gets size of procedure name
+    int proc_size = *(int*)buffer;
+    unsigned char *aliased_buff = buffer + sizeof(int);
 
-	// Gets actual procedure name
-	char recv_proc_name[proc_size];
-	memset(recv_proc_name, 0, sizeof(recv_proc_name));
-	char *dummyaliased_buff = (char*)aliased_buff;
+    // Gets actual procedure name
+    char recv_proc_name[proc_size];
+    memset(recv_proc_name, 0, sizeof(recv_proc_name));
+    char *dummyaliased_buff = (char*)aliased_buff;
 
-	int i = 0;
-	for (; i < proc_size; i++) {
-		recv_proc_name[i] = dummyaliased_buff[i];
-	}
-	aliased_buff = aliased_buff + proc_size;
+    int i = 0;
+    while (i < proc_size) {
+        recv_proc_name[i] = dummyaliased_buff[i];
+        i++;
+    }
 
-	// Gets number of parameters for procedure
-	int recv_num_args = *(int *)aliased_buff;
-	aliased_buff = aliased_buff + 4;
+    aliased_buff += proc_size;
 
-	// Find the procedure from the database
-	fp_type fp;
-	arg_type *arg_list;
-	int proc_found = 0;
+    // Gets number of parameters for procedure
+    int recv_num_args = *(int *)aliased_buff;
+    aliased_buff = aliased_buff + 4;
 
-	for(i = 0; i < proc_db_index; i++){
-		if(strcmp(proc_db[i].proc_name, recv_proc_name) == 0 &&
-				proc_db[i].n_params == recv_num_args){
-			fp = proc_db[i].fp;
-			proc_found = 1;
-		}
-	}
+    // Find the procedure from the database
+    fp_type fp;
+    arg_type *arg_list;
+    int proc_found = 0;
+    
+    i = 0;
+    while (i < proc_db_index){
+        if(strcmp(proc_db[i].proc_name, recv_proc_name) == 0 &&
+                proc_db[i].n_params == recv_num_args){
+            fp = proc_db[i].fp;
+            proc_found = 1;
+        }
 
-	// Proceeds to get arguments if procedure was found in database
-	if (proc_found == 1) {
+        i++;
+    }
 
-		arg_type *head_node = (arg_type*)malloc(sizeof(arg_type));
-		arg_type *curr_node = head_node;
+    // Proceeds to get arguments if procedure was found in database
+    if (proc_found == 1) {
 
-		// Build linked list of arguments as we unpack from buffer
-		i = 0;
-		for (; i < recv_num_args; i++) {
-			int recv_arg_size = *(int *)aliased_buff;
-			aliased_buff += sizeof(int);
-			int j;
+        arg_type *head_node = (arg_type*)malloc(sizeof(arg_type));
+        arg_type *curr_node = head_node;
 
-			unsigned char *recv_arg_val = (unsigned char*)malloc(sizeof(recv_arg_size));
-			for (j = 0; j < recv_arg_size; j++) {
-				recv_arg_val[j] = aliased_buff[j];
-			}
-			curr_node->arg_size = recv_arg_size;
-			curr_node->arg_val = (void*)recv_arg_val;
+        // Build linked list of arguments as we unpack from buffer
+        i = 0;
+        while (i < recv_num_args) {
+            int recv_arg_size = *(int *)aliased_buff;
+            aliased_buff += sizeof(int);
+            
+            unsigned char *recv_arg_val = (unsigned char*)malloc(sizeof(recv_arg_size));
 
-			arg_type *ptr = (arg_type*)malloc(sizeof(arg_type));
-			ptr->next = NULL;
-			curr_node->next = ptr;
-			curr_node = ptr;
-			aliased_buff = aliased_buff + recv_arg_size;
-		}
+            int j = 0;
+            while (j < recv_arg_size) {
+                recv_arg_val[j] = aliased_buff[j];
+                j++;
+            }
 
-		arg_list = head_node;
-	}
+            arg_type *ptr = (arg_type*)malloc(sizeof(arg_type));
+            ptr->next = NULL;
 
-	// Call function ptr to compute and return result
-	ret = fp(recv_num_args, arg_list);
-	return ret;
+            curr_node->arg_size = recv_arg_size;
+            curr_node->arg_val = (void*)recv_arg_val;
+
+            curr_node->next = ptr;
+            curr_node = ptr;
+
+            aliased_buff += recv_arg_size;
+            i++;
+        }
+
+        arg_list = head_node;
+    }
+
+    // Call function ptr to compute and return result
+    ret = fp(recv_num_args, arg_list);
+    return ret;
 }
 
 /**
@@ -192,7 +203,7 @@ return_type deserialize(unsigned char * buffer){
  */
 void launch_server() {
 
-	struct sockaddr_in serv_addr;
+    struct sockaddr_in serv_addr;
     struct sockaddr_in remote_addr;
     socklen_t addr_len = sizeof(remote_addr);
     int socket;
@@ -201,60 +212,60 @@ void launch_server() {
     socket = create_socket(AF_INET, SOCK_DGRAM, 0);
     bind_socket(socket);
 
-	int received_size;
-	unsigned char buffer[512];
+    int received_size;
+      unsigned char buffer[512];
 
     for (;;) {
-		memset(buffer, 0, sizeof(buffer));
+        memset(buffer, 0, sizeof(buffer));
 
         // Populate buffer with data from client
         received_size = recvfrom(socket, (void *)buffer, sizeof(buffer),
-			0, (struct sockaddr *)&remote_addr, &addr_len);
+            0, (struct sockaddr *)&remote_addr, &addr_len);
 
         // If we recieved data from client, move onto deserializing it
         if (received_size > 0) {
 
-			return_type ret;
-			ret = deserialize(buffer);
+            return_type ret;
+            ret = deserialize(buffer);
 
-			// Process and send result back to client
-			unsigned char send_buf[512];
-			unsigned char *tmp = int_serialize(send_buf, ret.return_size);
-			unsigned char *castedarg = (unsigned char*)ret.return_val;
+            // Process and send result back to client
+            unsigned char send_buf[512];
+            unsigned char *tmp = int_serialize(send_buf, ret.return_size);
+            unsigned char *castedarg = (unsigned char*)ret.return_val;
 
-			int k = 0;
-			for (; k < ret.return_size; k++) {
-				tmp[k] = castedarg[k];
-			}
+            int k = 0;
+            while (k < ret.return_size) {
+                tmp[k] = castedarg[k];
+                k++;
+            }
 
-			sendto(socket, send_buf, sizeof(send_buf), 0, (struct sockaddr *)&remote_addr, addr_len);
+            sendto(socket, send_buf, sizeof(send_buf), 0, (struct sockaddr *)&remote_addr, addr_len);
         }
     }
 }
 
 return_type add(const int nparams, arg_type* a) {
-	printf("running the function add \n, nparams = %d", nparams);
+    
     if(nparams != 2) {
-	printf("nparams is not 2 \n");
-	/* Error! */
-	r.return_val = NULL;
-	r.return_size = 0;
-	return r;
+        /* Error! */
+        r.return_val = NULL;
+        r.return_size = 0;
+        return r;
     }
 
     if(a->arg_size != sizeof(int) ||
        a->next->arg_size != sizeof(int)) {
-	   printf("arg_size is %d, next_arg_size is %d", a->arg_size, a->next->arg_size);
-	/* Error! */
-	r.return_val = NULL;
-	r.return_size = 0;
-	return r;
+       printf("arg_size is %d, next_arg_size is %d", a->arg_size, a->next->arg_size);
+        /* Error! */
+        r.return_val = NULL;
+        r.return_size = 0;
+        return r;
     }
 
     int i = *(int *)(a->arg_val);
     int j = *(int *)(a->next->arg_val);
 
-	printf("i is %d , j is %d \n", i, j);
+    printf("i is %d , j is %d \n", i, j);
 
     ret_int = i+j;
     r.return_val = (void *)(&ret_int);
