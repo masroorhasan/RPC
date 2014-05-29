@@ -10,9 +10,8 @@
  * http://www.cs.swarthmore.edu/~newhall/unixhelp/c_codestyle.html
  */
 
-#include "ece454rpc_types.h"
-
 #include <stdio.h>
+#include "ece454rpc_types.h"
 
 int main() {
     int a = -10, b = 20;

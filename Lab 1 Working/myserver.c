@@ -10,9 +10,11 @@
  * http://www.cs.swarthmore.edu/~newhall/unixhelp/c_codestyle.html
  */
 
+#include <stdio.h>
 #include "ece454rpc_types.h"
 
-#include <stdio.h>
+int ret_int;
+return_type r;
 
 return_type add(const int nparams, arg_type* a) {
 
