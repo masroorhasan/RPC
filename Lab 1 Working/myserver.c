@@ -13,183 +13,146 @@ return_type r;
 
 unsigned char *serialize_int(unsigned char *buffer, int value);
 
-struct functiondatabase {
-    const char *procedurename;
-	int numofparams;
+struct proc_map_db {
+    const char *proc_name;
+	int n_params;
     fp_type fp;
 } ;
 
-struct functiondatabase fdb[100];
-int fpnextavailspace = 0;
+struct proc_map_db proc_db[100];
+int proc_db_index = 0;
 
-/*
-//database of function pointers
-struct proc_map {
-    char *proc_name;
-    int n_params;
-    fp_type fp;
-};
-
-#define TABLE_SIZE 10
-struct proc_map proc_table[TABLE_SIZE];
-int index_to_insert = 0;
-*/
 const int clientport = 10069;
 
 bool register_procedure(const char *procedure_name, const int nparams, fp_type fnpointer) {
-	int i;
-	for (i = 0; i < fpnextavailspace; i++)
-	{
-		int a = strcmp(fdb[i].procedurename, procedure_name);
-		
-		if(a == 0 && nparams == fdb[i].numofparams) {
+	int i = 0;
+	for (; i < proc_db_index; i++)
+	{	
+		if( (strcmp( proc_db[i].proc_name, procedure_name) == 0)
+					&& (nparams == proc_db[i].n_params) ) {
 			return false;
 		}
 	}
 	
-	fdb[fpnextavailspace].procedurename = procedure_name;
-	fdb[fpnextavailspace].numofparams = nparams;
-	fdb[fpnextavailspace].fp = fnpointer;
-	fpnextavailspace++;
+	proc_db[proc_db_index].proc_name = procedure_name;
+	proc_db[proc_db_index].n_params = nparams;
+	proc_db[proc_db_index].fp = fnpointer;
+	proc_db_index++;
+	
 	return true;
 }
 
-/*
-extern bool register_procedure(const char *procedure_name,
-                    const int nparams, fp_type fnpointer)
-{
-    //define array (db) to store fp's
-    //put procedure_name as fp in an array of fp's
-    if(procedure_name == NULL) return false;
-    if(nparams < 2) return false;
-    if(index_to_insert > TABLE_SIZE) return false;
-
-    //register function in proc_table
-    //db looked up by name, i.e. procedure_name
-    int i = 0;
-    for(; i < TABLE_SIZE; i++) {
-        if((strcmp(proc_table[i].proc_name, procedure_name) == 0) 
-                && (proc_table[i].n_params == nparams) )
-            return false;
-    }
-
-    proc_table[index_to_insert].proc_name = procedure_name;
-    proc_table[index_to_insert].n_params = nparams;
-    proc_table[index_to_insert].fp = fnpointer;
-
-    index_to_insert += 1;
-
-    return true;
+unsigned char *serialize_int(unsigned char *buffer, int value) {
+	/* Write little-endian int value into buffer */
+	buffer[0] = value >> 0;
+	buffer[1] = value >> 8;
+	buffer[2] = value >> 16;
+	buffer[3] = value >> 24;
+	return buffer + 4;
 }
-*/
+
 void launch_server() {
 	
-	struct sockaddr_in serveraddress;      
-    struct sockaddr_in remoteaddress;     
-    socklen_t addrlen = sizeof(remoteaddress);         
-    int recvlen;                   
+	struct sockaddr_in serv_addr;      
+    struct sockaddr_in remote_addr;     
+    socklen_t addr_len = sizeof(remote_addr);         
+    int received_size;                   
     int sock;                        
-    unsigned char buffer[512];     /* receive buffer */
+    unsigned char buffer[512];
 	
     /* create a UDP socket */
     sock = socket(AF_INET, SOCK_DGRAM, 0);
-    memset((char *)&serveraddress, 0, sizeof(serveraddress));
-    serveraddress.sin_family = AF_INET;
-    serveraddress.sin_addr.s_addr = htonl(INADDR_ANY);
-    serveraddress.sin_port = htons(0);
-    mybind(sock, ((struct sockaddr_in *)&serveraddress));
+    memset((char *)&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(0);
+    mybind(sock, ((struct sockaddr_in *)&serv_addr));
 	
-	int currentport = ntohs(serveraddress.sin_port);
+	int port_curr = ntohs(serv_addr.sin_port);
 	
 	/* let client know which port to send message to */
-	printf("this application is using port: %d \n", currentport);
+	printf("this application is using port: %d \n", port_curr);
 	
     /* listening on port for client message */
     for (;;) {
 		memset(buffer, 0, sizeof(buffer));
-        recvlen = recvfrom(sock, (void *)buffer, sizeof(buffer), 
-			0, (struct sockaddr *)&remoteaddress, &addrlen);
-        if (recvlen > 0) {
-			int sizeoffuncname = *(int*)buffer;
+        received_size = recvfrom(sock, (void *)buffer, sizeof(buffer), 
+			0, (struct sockaddr *)&remote_addr, &addr_len);
+        if (received_size > 0) {
+			int proc_size = *(int*)buffer;
 			
-			unsigned char *advancedbuffer = buffer + 4;
-			char receivedfuncname[sizeoffuncname];
-			memset(receivedfuncname, 0, sizeof(receivedfuncname));
-			char *castedadvancedbuffer = (char*)advancedbuffer;
-			int i;
-			for (i = 0; i < sizeoffuncname; i++) {
-				receivedfuncname[i] = castedadvancedbuffer[i];
+			unsigned char *aliased_buff = buffer + 4;
+			char recv_proc_name[proc_size];
+			memset(recv_proc_name, 0, sizeof(recv_proc_name));
+			char *dummyaliased_buff = (char*)aliased_buff;
+			int i = 0;
+			for (; i < proc_size; i++) {
+				recv_proc_name[i] = dummyaliased_buff[i];
 			}
-			advancedbuffer = advancedbuffer + sizeoffuncname;
+			aliased_buff = aliased_buff + proc_size;
 			
-			int numofargs = *(int *)advancedbuffer; 			
-			advancedbuffer = advancedbuffer + 4;
+			int recv_num_args = *(int *)aliased_buff; 			
+			aliased_buff = aliased_buff + 4;
 			
 			/* find the function with linear search */
-			fp_type myfp;
-			int foundfunc = 0;
-			/*
-			for (i = 0; i < TABLE_SIZE; i++) {
-				int a = strcmp(proc_table[i].proc_name, receivedfuncname);
-				if (a == 0 && proc_table[i].n_params == numofargs) {
-					myfp = proc_table[i].fp;
-					foundfunc = 1;
-				}
-			}
-			*/
+			fp_type fp;
+			int proc_found = 0;
 
-			for(i = 0; i < fpnextavailspace; i++){
-				if(strcmp(fdb[i].procedurename, receivedfuncname) == 0 &&
-						fdb[i].numofparams == numofargs){
-					myfp = fdb[i].fp;
-					foundfunc = 1;
+			for(i = 0; i < proc_db_index; i++){
+				if(strcmp(proc_db[i].proc_name, recv_proc_name) == 0 &&
+						proc_db[i].n_params == recv_num_args){
+					fp = proc_db[i].fp;
+					proc_found = 1;
 				}
 			}
 
 			/* if a remote function call is identified and the corresponding
 			 * function is found in the database then
 			 * make the call then return the answer */ 
-			if (foundfunc == 1) {
-				arg_type *athead = (arg_type*)malloc(sizeof(arg_type));
-				arg_type *atcurrent = athead;
-				for (i = 0; i < numofargs; i++) {
-					int sizeofarg = *(int*)advancedbuffer;
-					advancedbuffer = advancedbuffer + 4;
+			if (proc_found == 1) {
+				arg_type *head_node = (arg_type*)malloc(sizeof(arg_type));
+				arg_type *curr_node = head_node;
+				i = 0;
+				for (; i < recv_num_args; i++) {
+					int recv_arg_size = *(int*)aliased_buff;
+					aliased_buff = aliased_buff + 4;
 					int j;
-					unsigned char *receivedargbuffer = (unsigned char*)malloc(sizeof(sizeofarg));
-					for (j = 0; j < sizeofarg; j++) {
-						receivedargbuffer[j] = advancedbuffer[j];
+					unsigned char *recv_arg_val = (unsigned char*)malloc(sizeof(recv_arg_size));
+					for (j = 0; j < recv_arg_size; j++) {
+						recv_arg_val[j] = aliased_buff[j];
 					}
-					atcurrent->arg_size = sizeofarg;
-					atcurrent->arg_val = (void*)receivedargbuffer;
+					curr_node->arg_size = recv_arg_size;
+					curr_node->arg_val = (void*)recv_arg_val;
 					
 					arg_type *ptr = (arg_type*)malloc(sizeof(arg_type));
 					ptr->next = NULL;
-					atcurrent->next = ptr;
-					atcurrent = ptr;
-					advancedbuffer = advancedbuffer + sizeofarg;
+					curr_node->next = ptr;
+					curr_node = ptr;
+					aliased_buff = aliased_buff + recv_arg_size;
 				}
 				/* link list has been constructed 
 				 * now call the function and get the returned value*/
-				return_type rt;
-				int m = *(int *)(athead->arg_val);
-				int n = *(int *)(athead->next->arg_val);
-				rt = myfp(numofargs, athead);
+				return_type ret;
+				int m = *(int *)(head_node->arg_val);
+				int n = *(int *)(head_node->next->arg_val);
+
+				ret = fp(recv_num_args, head_node);
 				
 				/* send the answer back to client via udp */
-				unsigned char buf[512];
-				unsigned char *tmp = serialize_int(buf, rt.return_size);
+				unsigned char send_buf[512];
+				unsigned char *tmp = serialize_int(send_buf, ret.return_size);
 				int k;
-				unsigned char *castedarg = (unsigned char*)rt.return_val;
-				for (k = 0; k < rt.return_size; k++) {
+				unsigned char *castedarg = (unsigned char*)ret.return_val;
+				for (k = 0; k < ret.return_size; k++) {
 					tmp[k] = castedarg[k];
 				}
 				
-				sendto(sock, buf, sizeof(buf), 0, (struct sockaddr *)&remoteaddress, addrlen);
+				sendto(sock, send_buf, sizeof(send_buf), 0, (struct sockaddr *)&remote_addr, addr_len);
 			}
         }
     }
 }
+
 return_type add(const int nparams, arg_type* a)
 {
 	printf("running the function add \n, nparams = %d", nparams);
@@ -231,13 +194,4 @@ int main() {
        launch_server(); runs forever. */
 
     return 0;
-}
-
-unsigned char *serialize_int(unsigned char *buffer, int value) {
-	/* Write little-endian int value into buffer */
-	buffer[0] = value >> 0;
-	buffer[1] = value >> 8;
-	buffer[2] = value >> 16;
-	buffer[3] = value >> 24;
-	return buffer + 4;
 }
