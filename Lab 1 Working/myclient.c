@@ -1,3 +1,10 @@
+/**
+ * References:
+ * 
+ * http://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
+ * http://stackoverflow.com/questions/9778806/serializing-a-class-with-a-pointer-in-c
+ */
+
 #include "ece454rpc_types.h"
 
 #include <stdio.h>
@@ -37,6 +44,18 @@ return_type make_remote_call(const char *servernameorip,
 								const char *procedure_name,
 								const int nparams, ...) {
 
+    // Create server address
+    struct sockaddr_in server_socket_address;
+    memset((char *)&server_socket_address, 0, sizeof(server_socket_address));
+    server_socket_address.sin_port = htons(serverportnumber);
+    server_socket_address.sin_family = AF_INET;
+
+    // Lookup the server's IP using the hostname provided
+    struct hostent *server_ip_address;
+    server_ip_address = gethostbyname(servernameorip);
+    memcpy((void *)&server_socket_address.sin_addr, server_ip_address->h_addr_list[0],
+        server_ip_address->h_length);
+
     // Create client socket and bind address to it
     int client_socket = socket(AF_INET, SOCK_DGRAM, 0);
 	struct sockaddr_in client_socket_address;
@@ -45,18 +64,6 @@ return_type make_remote_call(const char *servernameorip,
 	client_socket_address.sin_family = AF_INET;
     client_socket_address.sin_port = htons(client_port);
 	bind(client_socket, (struct sockaddr *)&client_socket_address, sizeof(client_socket_address));
-
-    // Create server address
-	struct sockaddr_in server_socket_address;
-	memset((char *)&server_socket_address, 0, sizeof(server_socket_address));
-	server_socket_address.sin_port = htons(serverportnumber);
-    server_socket_address.sin_family = AF_INET;
-
-	// Lookup the server's IP using the hostname provided
-	struct hostent *server_ip_address;
-	server_ip_address = gethostbyname(servernameorip);
-	memcpy((void *)&server_socket_address.sin_addr, server_ip_address->h_addr_list[0],
-		server_ip_address->h_length);
 
     /**
      * Pack data into buffer
@@ -127,10 +134,10 @@ return_type make_remote_call(const char *servernameorip,
 
         if (receive_length > 0) {
 			// Got a good message! Woot!
-			int return_size = *(int*)receive_buffer;
+			unsigned char *return_value_buffer = receive_buffer + 4;
+            int return_size = *(int*)receive_buffer;
             unsigned char return_value[return_size];
-            unsigned char *return_value_buffer = receive_buffer + 4;
-
+            
             int k;
 			for (k = 0; k < return_size; k++) {
 				return_value[k] = return_value_buffer[k];
@@ -138,16 +145,16 @@ return_type make_remote_call(const char *servernameorip,
 
 			return_type rt;
 			memset((unsigned char *)&rt, 0, sizeof(rt));
-			rt.return_size = return_size;;
 			rt.return_val = return_value;
-
+            rt.return_size = return_size;
+			
 			return rt;
 		}
 	}
 }
 
 int main() {
-    int a =27, b = 91;
+    int a = 27, b = 91;
     return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
 	                               10004, "addtwo", 2,
 	                               sizeof(int), (void *)(&a),
