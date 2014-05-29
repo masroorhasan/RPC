@@ -68,7 +68,7 @@ void bind_socket(int socket) {
     }
 
     // Print port
-    printf(" %d\n", ntohs(myAddress.sin_port));
+    printf(" %d", ntohs(myAddress.sin_port));
 }
 
 /**
