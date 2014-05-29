@@ -3,6 +3,7 @@
  *
  * http://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
  * http://stackoverflow.com/questions/9778806/serializing-a-class-with-a-pointer-in-c
+ * http://stackoverflow.com/questions/504810/how-do-i-find-the-current-machines-full-hostname-in-c-hostname-and-domain-info
  *
  * Coding Style:
  *

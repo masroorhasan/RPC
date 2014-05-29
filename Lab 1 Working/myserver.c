@@ -3,6 +3,7 @@
  *
  * http://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
  * http://stackoverflow.com/questions/9778806/serializing-a-class-with-a-pointer-in-c
+ * http://stackoverflow.com/questions/504810/how-do-i-find-the-current-machines-full-hostname-in-c-hostname-and-domain-info
  *
  * Coding Style:
  *
@@ -21,6 +22,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/udp.h>
+#include <netdb.h>
 
 // Database structure to store procedure properties
 struct proc_map_db {
@@ -49,7 +51,6 @@ int create_socket(const int domain, const int type, const int protocol) {
         exit(0);
     }
 
-    printf("Created socket.\n");
     return socketDescriptor;
 }
 
@@ -70,7 +71,8 @@ void bind_socket(int socket) {
         exit(0);
     }
 
-    printf("Binded socket to port: %i \n", ntohs(myAddress.sin_port));
+    // Print port
+    printf(" %d\n", ntohs(myAddress.sin_port));
 }
 
 /**
@@ -207,6 +209,15 @@ void launch_server() {
     struct sockaddr_in remote_addr;
     socklen_t addr_len = sizeof(remote_addr);
     int socket;
+
+    // Look up and print hostname
+    struct addrinfo hints, *info, *p;
+    char hostname[1024];
+    hostname[1023] = '\0';
+    gethostname(hostname, 1023);
+    printf("%s", hostname);
+    struct hostent* h;
+    h = gethostbyname(hostname);
 
     // Creates a UDP socket
     socket = create_socket(AF_INET, SOCK_DGRAM, 0);
