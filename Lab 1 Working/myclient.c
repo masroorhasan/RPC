@@ -3,6 +3,10 @@
  *
  * http://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
  * http://stackoverflow.com/questions/9778806/serializing-a-class-with-a-pointer-in-c
+ * 
+ * Coding Style:
+ * 
+ * http://www.cs.swarthmore.edu/~newhall/unixhelp/c_codestyle.html
  */
 
 #include "ece454rpc_types.h"
