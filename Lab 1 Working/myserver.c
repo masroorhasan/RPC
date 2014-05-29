@@ -1,27 +1,45 @@
-#include <stdio.h>
+/**
+ * References:
+ *
+ * http://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
+ * http://stackoverflow.com/questions/9778806/serializing-a-class-with-a-pointer-in-c
+ * 
+ * Coding Style:
+ * 
+ * http://www.cs.swarthmore.edu/~newhall/unixhelp/c_codestyle.html
+ */
+
 #include "ece454rpc_types.h"
+#include "mybind.c"
+
+#include <stdio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/udp.h>
-#include "mybind.c"
-int ret_int;
-return_type r;
 
+// Database structure to store procedure properties.
 struct proc_map_db {
     const char *proc_name;
 	int n_params;
     fp_type fp;
-} ;
+};
 
+int ret_int;
+return_type r;
+const int clientport = 10069;
+
+// Database declaration.
 struct proc_map_db proc_db[100];
 int proc_db_index = 0;
 
-const int clientport = 10069;
-
+/**
+ * Creates and a new socket instance and returns socket identifier.
+ */
 int create_socket(const int domain, const int type, const int protocol) {
 
     int socketDescriptor = socket(domain, type, protocol);
@@ -35,6 +53,9 @@ int create_socket(const int domain, const int type, const int protocol) {
     return socketDescriptor;
 }
 
+/**
+ * Binds a socket identifier to host address.
+ */
 void bind_socket(int socket) {
 
     struct sockaddr_in myAddress;
@@ -52,7 +73,11 @@ void bind_socket(int socket) {
     printf("Binded socket to port: %i \n", ntohs(myAddress.sin_port));
 }
 
+/**
+ * Registers a new procedure to the procedure database.
+ */
 bool register_procedure(const char *procedure_name, const int nparams, fp_type fnpointer) {
+	
 	int i = 0;
 	for (; i < proc_db_index; i++)
 	{	
@@ -88,24 +113,33 @@ unsigned char *int_serialize(unsigned char *buffer, int value) {
     return buffer + shift + 1;
 }
 
+/**
+ * Deserializes buffer received from client.
+ */
 return_type deserialize(unsigned char * buffer){
+	
 	return_type ret;
+	
+	// Gets size of procedure name
 	int proc_size = *(int*)buffer;
-			
 	unsigned char *aliased_buff = buffer + 4;
+	
+	// Gets actual procedure name
 	char recv_proc_name[proc_size];
 	memset(recv_proc_name, 0, sizeof(recv_proc_name));
 	char *dummyaliased_buff = (char*)aliased_buff;
+	
 	int i = 0;
 	for (; i < proc_size; i++) {
 		recv_proc_name[i] = dummyaliased_buff[i];
 	}
 	aliased_buff = aliased_buff + proc_size;
 
+	// Gets number of parameters for procedure
 	int recv_num_args = *(int *)aliased_buff; 			
 	aliased_buff = aliased_buff + 4;
 
-	/* find the function with linear search */
+	// Find the procedure from the database
 	fp_type fp;
 	arg_type *arg_list;
 	int proc_found = 0;
@@ -118,17 +152,19 @@ return_type deserialize(unsigned char * buffer){
 		}
 	}
 
-	/* if a remote function call is identified and the corresponding
-	 * function is found in the database then
-	 * make the call then return the answer */ 
+	// Proceeds to get arguments if procedure was found in database
 	if (proc_found == 1) {
+		
 		arg_type *head_node = (arg_type*)malloc(sizeof(arg_type));
 		arg_type *curr_node = head_node;
+		
+		// Build linked list of arguments as we unpack from buffer
 		i = 0;
 		for (; i < recv_num_args; i++) {
-			int recv_arg_size = *(int*)aliased_buff;
-			aliased_buff = aliased_buff + 4;
+			int recv_arg_size = *(int *)aliased_buff;
+			aliased_buff += sizeof(int);
 			int j;
+
 			unsigned char *recv_arg_val = (unsigned char*)malloc(sizeof(recv_arg_size));
 			for (j = 0; j < recv_arg_size; j++) {
 				recv_arg_val[j] = aliased_buff[j];
@@ -146,10 +182,14 @@ return_type deserialize(unsigned char * buffer){
 		arg_list = head_node;
 	}
 
+	// Call function ptr to compute and return result
 	ret = fp(recv_num_args, arg_list);
 	return ret;
 }
 
+/**
+ * Main loop that keeps server running and processing incoming procedure calls
+ */
 void launch_server() {
 	
 	struct sockaddr_in serv_addr;      
@@ -157,31 +197,33 @@ void launch_server() {
     socklen_t addr_len = sizeof(remote_addr);         
     int socket;                        
 	
-    /* create a UDP socket */
+    // Creates a UDP socket
     socket = create_socket(AF_INET, SOCK_DGRAM, 0);
     bind_socket(socket);
 
 	int received_size;
 	unsigned char buffer[512];
-    /* listening on port for client message */
+    
     for (;;) {
 		memset(buffer, 0, sizeof(buffer));
+        
+        // Populate buffer with data from client
         received_size = recvfrom(socket, (void *)buffer, sizeof(buffer), 
 			0, (struct sockaddr *)&remote_addr, &addr_len);
+        
+        // If we recieved data from client, move onto deserializing it
         if (received_size > 0) {
+			
 			return_type ret;
-			//int m = *(int *)(head_node->arg_val);
-			//int n = *(int *)(head_node->next->arg_val);
-
-			//ret = fp(recv_num_args, head_node);
 			ret = deserialize(buffer);
 			
-			/* send the answer back to client via udp */
+			// Process and send result back to client
 			unsigned char send_buf[512];
 			unsigned char *tmp = int_serialize(send_buf, ret.return_size);
-			int k;
 			unsigned char *castedarg = (unsigned char*)ret.return_val;
-			for (k = 0; k < ret.return_size; k++) {
+			
+			int k = 0;
+			for (; k < ret.return_size; k++) {
 				tmp[k] = castedarg[k];
 			}
 			
