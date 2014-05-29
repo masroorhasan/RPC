@@ -166,7 +166,7 @@ return_type make_remote_call(const char *servernameorip,
 int main() {
     int a = -10, b = 20;
     return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
-	                               10004, "addtwo", 2,
+	                               10003, "addtwo", 2,
 	                               sizeof(int), (void *)(&a),
 	                               sizeof(int), (void *)(&b));
     int result = *(int *)(ans.return_val);
