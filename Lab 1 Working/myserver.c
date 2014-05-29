@@ -70,13 +70,84 @@ bool register_procedure(const char *procedure_name, const int nparams, fp_type f
 	return true;
 }
 
-unsigned char *serialize_int(unsigned char *buffer, int value) {
-	/* Write little-endian int value into buffer */
-	buffer[0] = value >> 0;
-	buffer[1] = value >> 8;
-	buffer[2] = value >> 16;
-	buffer[3] = value >> 24;
-	return buffer + 4;
+/**
+ * Serializes int values into a character buffer.
+ */
+unsigned char *int_serialize(unsigned char *buffer, int value) {
+
+    int shift = 0;
+    const int shift_eight = 8;
+    const int shift_sixteen = 16;
+    const int shift_twentyfour = 24;
+
+    buffer[shift] = value >> shift;
+    buffer[++shift] = value >> shift_eight;
+    buffer[++shift] = value >> shift_sixteen;
+    buffer[++shift] = value >> shift_twentyfour;
+
+    return buffer + shift + 1;
+}
+
+return_type deserialize(unsigned char * buffer){
+	return_type ret;
+	int proc_size = *(int*)buffer;
+			
+	unsigned char *aliased_buff = buffer + 4;
+	char recv_proc_name[proc_size];
+	memset(recv_proc_name, 0, sizeof(recv_proc_name));
+	char *dummyaliased_buff = (char*)aliased_buff;
+	int i = 0;
+	for (; i < proc_size; i++) {
+		recv_proc_name[i] = dummyaliased_buff[i];
+	}
+	aliased_buff = aliased_buff + proc_size;
+
+	int recv_num_args = *(int *)aliased_buff; 			
+	aliased_buff = aliased_buff + 4;
+
+	/* find the function with linear search */
+	fp_type fp;
+	arg_type *arg_list;
+	int proc_found = 0;
+
+	for(i = 0; i < proc_db_index; i++){
+		if(strcmp(proc_db[i].proc_name, recv_proc_name) == 0 &&
+				proc_db[i].n_params == recv_num_args){
+			fp = proc_db[i].fp;
+			proc_found = 1;
+		}
+	}
+
+	/* if a remote function call is identified and the corresponding
+	 * function is found in the database then
+	 * make the call then return the answer */ 
+	if (proc_found == 1) {
+		arg_type *head_node = (arg_type*)malloc(sizeof(arg_type));
+		arg_type *curr_node = head_node;
+		i = 0;
+		for (; i < recv_num_args; i++) {
+			int recv_arg_size = *(int*)aliased_buff;
+			aliased_buff = aliased_buff + 4;
+			int j;
+			unsigned char *recv_arg_val = (unsigned char*)malloc(sizeof(recv_arg_size));
+			for (j = 0; j < recv_arg_size; j++) {
+				recv_arg_val[j] = aliased_buff[j];
+			}
+			curr_node->arg_size = recv_arg_size;
+			curr_node->arg_val = (void*)recv_arg_val;
+			
+			arg_type *ptr = (arg_type*)malloc(sizeof(arg_type));
+			ptr->next = NULL;
+			curr_node->next = ptr;
+			curr_node = ptr;
+			aliased_buff = aliased_buff + recv_arg_size;
+		}
+
+		arg_list = head_node;
+	}
+
+	ret = fp(recv_num_args, arg_list);
+	return ret;
 }
 
 void launch_server() {
@@ -98,76 +169,23 @@ void launch_server() {
         received_size = recvfrom(socket, (void *)buffer, sizeof(buffer), 
 			0, (struct sockaddr *)&remote_addr, &addr_len);
         if (received_size > 0) {
-			int proc_size = *(int*)buffer;
-			
-			unsigned char *aliased_buff = buffer + 4;
-			char recv_proc_name[proc_size];
-			memset(recv_proc_name, 0, sizeof(recv_proc_name));
-			char *dummyaliased_buff = (char*)aliased_buff;
-			int i = 0;
-			for (; i < proc_size; i++) {
-				recv_proc_name[i] = dummyaliased_buff[i];
-			}
-			aliased_buff = aliased_buff + proc_size;
-			
-			int recv_num_args = *(int *)aliased_buff; 			
-			aliased_buff = aliased_buff + 4;
-			
-			/* find the function with linear search */
-			fp_type fp;
-			int proc_found = 0;
+			return_type ret;
+			//int m = *(int *)(head_node->arg_val);
+			//int n = *(int *)(head_node->next->arg_val);
 
-			for(i = 0; i < proc_db_index; i++){
-				if(strcmp(proc_db[i].proc_name, recv_proc_name) == 0 &&
-						proc_db[i].n_params == recv_num_args){
-					fp = proc_db[i].fp;
-					proc_found = 1;
-				}
+			//ret = fp(recv_num_args, head_node);
+			ret = deserialize(buffer);
+			
+			/* send the answer back to client via udp */
+			unsigned char send_buf[512];
+			unsigned char *tmp = int_serialize(send_buf, ret.return_size);
+			int k;
+			unsigned char *castedarg = (unsigned char*)ret.return_val;
+			for (k = 0; k < ret.return_size; k++) {
+				tmp[k] = castedarg[k];
 			}
-
-			/* if a remote function call is identified and the corresponding
-			 * function is found in the database then
-			 * make the call then return the answer */ 
-			if (proc_found == 1) {
-				arg_type *head_node = (arg_type*)malloc(sizeof(arg_type));
-				arg_type *curr_node = head_node;
-				i = 0;
-				for (; i < recv_num_args; i++) {
-					int recv_arg_size = *(int*)aliased_buff;
-					aliased_buff = aliased_buff + 4;
-					int j;
-					unsigned char *recv_arg_val = (unsigned char*)malloc(sizeof(recv_arg_size));
-					for (j = 0; j < recv_arg_size; j++) {
-						recv_arg_val[j] = aliased_buff[j];
-					}
-					curr_node->arg_size = recv_arg_size;
-					curr_node->arg_val = (void*)recv_arg_val;
-					
-					arg_type *ptr = (arg_type*)malloc(sizeof(arg_type));
-					ptr->next = NULL;
-					curr_node->next = ptr;
-					curr_node = ptr;
-					aliased_buff = aliased_buff + recv_arg_size;
-				}
-				/* link list has been constructed 
-				 * now call the function and get the returned value*/
-				return_type ret;
-				int m = *(int *)(head_node->arg_val);
-				int n = *(int *)(head_node->next->arg_val);
-
-				ret = fp(recv_num_args, head_node);
-				
-				/* send the answer back to client via udp */
-				unsigned char send_buf[512];
-				unsigned char *tmp = serialize_int(send_buf, ret.return_size);
-				int k;
-				unsigned char *castedarg = (unsigned char*)ret.return_val;
-				for (k = 0; k < ret.return_size; k++) {
-					tmp[k] = castedarg[k];
-				}
-				
-				sendto(socket, send_buf, sizeof(send_buf), 0, (struct sockaddr *)&remote_addr, addr_len);
-			}
+			
+			sendto(socket, send_buf, sizeof(send_buf), 0, (struct sockaddr *)&remote_addr, addr_len);
         }
     }
 }
