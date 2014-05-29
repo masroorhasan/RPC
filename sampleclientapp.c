@@ -124,9 +124,8 @@ int serializeData(const char *procedure_name, int nparams, va_list valist, char 
 
     return serialize_offset;
 }
-/*
-return_type deserializeRcvBuffer(unsigned char* buffer)
-{
+
+return_type deserializeRcvBuffer(unsigned char* buffer){
     printf("Deserializing rcv buffer from server\n");
 
     int ret_size;
@@ -143,9 +142,11 @@ return_type deserializeRcvBuffer(unsigned char* buffer)
     ret.return_size = ret_size;
     ret.return_val = ret_val;
 
+    printf("return size: %i\n", ret_size);
+    printf("return val: %i\n", *(int *)ret_val);
+
     return ret;
 }
-*/
 
 extern return_type make_remote_call(const char *servernameorip,
   const int serverportnumber,
@@ -184,39 +185,39 @@ extern return_type make_remote_call(const char *servernameorip,
     }
     
     return_type ret;
-/*
 
+    memset(buffer, 0, sizeof(buffer));
     socklen_t lengthOfServerAddress = sizeof(serverAddress);
     int receivedMessage = recvfrom(socket, buffer, sizeof(buffer),
       0, (struct sockaddr *)&serverAddress,
         &lengthOfServerAddress);
-
 
     // Print message from server
     if(receivedMessage > 0) {
       printf("Received %d bytes\n", receivedMessage);
       buffer[receivedMessage] = 0;
       printf("Client received message: \"%s\"\n", buffer);
-      //ret = deserializeRcvBuffer(rcvbuffer);
+      memset(buffer, 0, sizeof(buffer));
+
+      ret = deserializeRcvBuffer(buffer);
     }
-*/
-    close(socket);
+
+   // close(socket);
 
     printf("Program execution complete. \n");
-    
     return ret;
 }
 
 int main() {
     int a = -10, b = 20;
     return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
-      10000,
+      10002,
       "addtwo", 2,
       sizeof(int), (void *)(&a),
       sizeof(int), (void *)(&b));
 
-//    int i = *(int *)(ans.return_val);
-//    printf("client, got result: %d\n", i);
+    int i = *(int *)(ans.return_val);
+    printf("client, got result: %d\n", i);
 
     return 0;
 }

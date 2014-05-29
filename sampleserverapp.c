@@ -127,10 +127,11 @@ extern bool register_procedure(const char *procedure_name,
 }
 
 return_type deserializeBuffer(unsigned char *buffer) {
-
+    printf("deserializeBuffer");
+ 
     return_type ret;
-    int deserialize_proc_size;
-    int deserialize_nparams;
+    int deserialize_proc_size = 0;
+    int deserialize_nparams = 0;
     int deserialize_offset = 0;
 
     //extract proc name size
@@ -149,36 +150,35 @@ return_type deserializeBuffer(unsigned char *buffer) {
     deserialize_offset += sizeof(int);
     printf("deserialize: The fifth thing from the buffer is %i\n", deserialize_nparams);
 
-    //extract params
-    arg_type *current, *head;
-
-    head = current;
-
+    //linked list
+    arg_type *head = (arg_type*)malloc(sizeof(arg_type));
+    arg_type *current = head;
     int i = 0;
-    for(; i < deserialize_nparams; i++) {
+    for (; i < deserialize_nparams; i++) {
         int arg_size;
         memcpy(&arg_size, buffer + deserialize_offset, sizeof(int));
+        printf("index %i, arg size: %i\n", i, arg_size);
         deserialize_offset += sizeof(int);
 
         void *arg_val;
         memcpy(arg_val, buffer + deserialize_offset, arg_size);
+        printf("index %i, arg val: %i\n", i, *(int *)arg_val);
         deserialize_offset += arg_size;
 
         current->arg_size = arg_size;
         current->arg_val = arg_val;
-
-        current->next = (arg_type*)malloc(sizeof(arg_type));
-        current = current->next;
+        
+        arg_type *ptr = (arg_type*)malloc(sizeof(arg_type));
+        ptr->next = NULL;
+        current->next = ptr;
+        current = ptr;
     }
 
+    int n = *(int *)(head->arg_val);
+    int m = *(int *)(head->next->arg_val);
 
-    printf("Printing the list.\n");
-    while(current != NULL){
-    	printf("arg size %i \n", current->arg_size);
-    	printf("arg val %i \n", *(int *)current->arg_val);
-    	current = current->next;
-    }
-
+    printf("n %i\n", n); 
+    printf("m %i\n", m); 
     i = 0;
     for(; i < TABLE_SIZE; i++){
         if(strcmp(proc_table[i].proc_name, deserialize_proc_name) == 0){
@@ -186,12 +186,11 @@ return_type deserializeBuffer(unsigned char *buffer) {
             break;
         }
     }
-
+    free(head);
     printf("return val %i \n", *(int *)ret.return_val);
-
     return ret;
 }
-/*
+
 void serializeSendBuffer(unsigned char *buffer, return_type ret)
 {
     int idx = 0;
@@ -207,41 +206,66 @@ void serializeSendBuffer(unsigned char *buffer, return_type ret)
     idx += sizeof(int);
 
     memcpy(buffer+idx, ret_val, ret_size);
-    printf("return val %i \n", *(int *)buffer+idx);
+    printf("return val %i \n", *(int *)(buffer+idx));
     idx += ret_size;
 }
-*/
+
 
 /* launch_server() -- used by the app programmer's server code to indicate that
  * it wants start receiving rpc invocations for functions that it registered
  * with the server stub. */
 void launch_server() {
 
-    int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
-    bindSocket(&socket);
+    // int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
+    // bindSocket(&socket);
 
+    struct sockaddr_in serveraddress;
     struct sockaddr_in remoteAddress;
     socklen_t remoteAddressLength = sizeof(remoteAddress);
+//    int remoteAddressLength = sizeof(remoteAddress);
 
     unsigned char receiveBuffer[BUFSIZE];
-    int receivedSize;
+    int receivedSize;      
+
+    /* create a UDP socket */
+    // int socket = socket(AF_INET, SOCK_DGRAM, 0);
+    int socket = createSocket(AF_INET, SOCK_DGRAM, 0);
+    memset((char *)&serveraddress, 0, sizeof(serveraddress));
+    serveraddress.sin_family = AF_INET;
+    serveraddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    serveraddress.sin_port = htons(0);
+    mybind(socket, (struct sockaddr *)&serveraddress);
+    
+    int currentport = ntohs(serveraddress.sin_port);
+    
+    /* let client know which port to send message to */
+    printf("this application is using port: %d \n", currentport);
 
     for (;;) {
-        receivedSize = recvfrom(socket, receiveBuffer, BUFSIZE,
+        memset(receiveBuffer, 0, sizeof(receiveBuffer));
+        receivedSize = recvfrom(socket, (void *)receiveBuffer, BUFSIZE,
             0, (struct sockaddr *)&remoteAddress, &remoteAddressLength);
 
         printf("Received %d bytes\n", receivedSize);
 
         if (receivedSize > 0) {
-            receiveBuffer[receivedSize] = 0;
+            // receiveBuffer[receivedSize] = 0;
             //deserialize rcvbuffer, return proc_name and args
-	       return_type ret = deserializeBuffer(receiveBuffer);
-	       //serializeSendBuffer(receiveBuffer, ret);
-            //take result and sendto() client
-
+		unsigned char *buff = receiveBuffer;
+	       return_type ret = deserializeBuffer(buff);
+	       memset(receiveBuffer, 0, sizeof(receiveBuffer));
+	       serializeSendBuffer(receiveBuffer, ret);
         }
+
+
 	printf("Sending to client..\n");
-        //sendto(socket, "Warren",  strlen("Warren"), 0, (struct sockaddr *)&remoteAddress, remoteAddressLength);
+
+	//printf("Remote address: %s", inet_ntoa(remoteAddress.sin_addr));
+	//printf("%s:%d of addr length %d\n",inet_ntoa(remoteAddress.sin_addr),remoteAddress.sin_port,remoteAddressLength);
+        //printf("Calling sendto()..\n");
+	sendto(socket, receiveBuffer, sizeof(receiveBuffer), 0, (struct sockaddr *)&remoteAddress, remoteAddressLength);
+        memset(receiveBuffer, 0, sizeof(receiveBuffer));
+
     }
 
 }
