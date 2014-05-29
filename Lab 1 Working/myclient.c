@@ -1,8 +1,12 @@
 /**
  * References:
- * 
+ *
  * http://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
  * http://stackoverflow.com/questions/9778806/serializing-a-class-with-a-pointer-in-c
+ * 
+ * Coding Style:
+ * 
+ * http://www.cs.swarthmore.edu/~newhall/unixhelp/c_codestyle.html
  */
 
 #include "ece454rpc_types.h"
@@ -142,7 +146,7 @@ return_type make_remote_call(const char *servernameorip,
 			unsigned char *return_value_buffer = receive_buffer + 4;
             int return_size = *(int*)receive_buffer;
             unsigned char return_value[return_size];
-            
+
             int k = 0;
             while (k < return_size) {
 				return_value[k] = return_value_buffer[k];
@@ -153,7 +157,7 @@ return_type make_remote_call(const char *servernameorip,
 			memset((unsigned char *)&rt, 0, sizeof(rt));
 			rt.return_val = return_value;
             rt.return_size = return_size;
-			
+
 			return rt;
 		}
 	}
