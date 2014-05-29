@@ -31,8 +31,6 @@ struct proc_map_db {
     fp_type fp;
 };
 
-const int clientport = 10069;
-
 // Database declaration
 struct proc_map_db proc_db[100];
 int proc_db_index = 0;
