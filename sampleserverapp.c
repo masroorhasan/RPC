@@ -196,11 +196,11 @@ void serializeSendBuffer(unsigned char *buffer, return_type ret)
     int idx = 0;
     int ret_size = ret.return_size;
     void *ret_val = ret.return_val;
-    printf("serializing procedure result to send back to client\n");
 
     printf("ret_size passed in: %i\n", ret_size);
     printf("ret_val passed in: %i\n", *(int *)ret_val);
 
+    printf("serializing size and val to buffer");
     memcpy(buffer, &ret_size, sizeof(int) );
     printf("return size %i \n", *(int *)buffer);
     idx += sizeof(int);
