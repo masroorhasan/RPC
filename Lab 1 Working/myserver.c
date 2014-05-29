@@ -279,8 +279,5 @@ int main() {
 
     launch_server();
 
-    /* should never get here, because
-       launch_server(); runs forever. */
-
     return 0;
 }
