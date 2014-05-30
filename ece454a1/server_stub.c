@@ -118,10 +118,17 @@ unsigned char *int_serialize(unsigned char *buffer, int value) {
 return_type deserialize(unsigned char * buffer){
 
     return_type ret;
+    ret.return_val = NULL;
+    ret.return_size = 0;
 
     // Gets size of procedure name
     int proc_size = *(int*)buffer;
     unsigned char *aliased_buff = buffer + sizeof(int);
+
+    if (proc_size == 0) {
+        printf("Procedure size was zero. Ret not set.\n");
+        return ret;
+    }
 
     // Gets actual procedure name
     char recv_proc_name[proc_size];
@@ -152,7 +159,6 @@ return_type deserialize(unsigned char * buffer){
             fp = proc_db[i].fp;
             proc_found = 1;
         }
-
         i++;
     }
 
@@ -190,10 +196,13 @@ return_type deserialize(unsigned char * buffer){
         }
 
         arg_list = head_node;
+
+        // Call function ptr to compute and return result
+        ret = fp(recv_num_args, arg_list);
+    } else {
+        printf("Could not find function in database. Ret not set.\n");
     }
 
-    // Call function ptr to compute and return result
-    ret = fp(recv_num_args, arg_list);
     return ret;
 }
 
