@@ -16,10 +16,35 @@
 int main() {
     int a = -10, b = 20;
     return_type ans = make_remote_call("ecelinux3.uwaterloo.ca",
-                                   10000, "addtwo", 2,
+                                   10001, "addtwo", 2,
                                    sizeof(int), (void *)(&a),
                                    sizeof(int), (void *)(&b));
     int result = *(int *)(ans.return_val);
+
+    printf("Client, got result: %d\n", result);
+
+    ans = make_remote_call("ecelinux3.uwaterloo.ca",
+                                   10001, "addtwo1", 2,
+                                   sizeof(int), (void *)(&a),
+                                   sizeof(int), (void *)(&b));
+		printf("Client finished making unregistered function call.\n");
+
+
+    ans = make_remote_call("ecelinux3.uwaterloo.ca",
+                                   10001, "", 2,
+                                   sizeof(int), (void *)(&a),
+                                   sizeof(int), (void *)(&b));
+
+
+		printf("Client finished making no procedure name function call.\n");
+
+
+    ans = make_remote_call("ecelinux3.uwaterloo.ca",
+                                   10001, "warrenthefuckingmansmith", 2,
+                                   sizeof(int), (void *)(&a),
+                                   sizeof(int), (void *)(&b));
+
+    result = *(int *)(ans.return_val);
 
     printf("Client, got result: %d\n", result);
 

@@ -44,8 +44,37 @@ return_type add(const int nparams, arg_type* a) {
     return r;
 }
 
+return_type warrenthefuckingmansmith(const int nparams, arg_type* a) {
+
+    if(nparams != 2) {
+        /* Error! */
+        r.return_val = NULL;
+        r.return_size = 0;
+        return r;
+    }
+
+    if(a->arg_size != sizeof(int) ||
+       a->next->arg_size != sizeof(int)) {
+       printf("arg_size is %d, next_arg_size is %d", a->arg_size, a->next->arg_size);
+        /* Error! */
+        r.return_val = NULL;
+        r.return_size = 0;
+        return r;
+    }
+
+    int i = *(int *)(a->arg_val);
+    int j = *(int *)(a->next->arg_val);
+
+    ret_int = i+j;
+    r.return_val = (void *)(&ret_int);
+    r.return_size = sizeof(int);
+
+    return r;
+}
+
 int main() {
     register_procedure("addtwo", 2, add);
+		register_procedure("warrenthefuckingmansmith", 2, warrenthefuckingmansmith);
 
     launch_server();
 

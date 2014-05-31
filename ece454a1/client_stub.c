@@ -50,6 +50,10 @@ return_type make_remote_call(const char *servernameorip,
                                 const char *procedure_name,
                                 const int nparams, ...) {
 
+    return_type rt;
+		rt.return_val = NULL;
+		rt.return_size = 0;
+
     // Create server address
     struct sockaddr_in server_socket_address;
     memset((char *)&server_socket_address, 0, sizeof(server_socket_address));
@@ -84,7 +88,7 @@ return_type make_remote_call(const char *servernameorip,
     memset(buffer, 0, sizeof(buffer));
 
     // Pack function name and size in buffer
-    int function_name_size = strlen(procedure_name);
+    int function_name_size = strlen(procedure_name) + 1;
     unsigned char *serial_result = int_serialize(buffer, function_name_size);
     unsigned char *function_name = (unsigned char*)procedure_name;
 
@@ -126,7 +130,6 @@ return_type make_remote_call(const char *servernameorip,
     /**
      * Make remote procedure call
      */
-     printf("Calling send_to in client_stub. buffer_size: %i strlen(buffer): %i sizeof(buffer): %i\n", buffer_size, strlen(buffer), sizeof(buffer));
      sendto(client_socket, buffer, buffer_size, 0,
      (struct sockaddr *)&server_socket_address, sizeof(server_socket_address));
 
@@ -153,7 +156,6 @@ return_type make_remote_call(const char *servernameorip,
                  k++;
              }
 
-             return_type rt;
              memset((unsigned char *)&rt, 0, sizeof(rt));
              rt.return_val = return_value;
              rt.return_size = return_size;

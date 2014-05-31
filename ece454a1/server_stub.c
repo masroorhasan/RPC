@@ -127,8 +127,8 @@ return_type deserialize(unsigned char * buffer){
     int proc_size = *(int*)buffer;
     unsigned char *aliased_buff = buffer + sizeof(int);
 
-    if (proc_size == 0) {
-        printf("Procedure size was zero. Ret not set.\n");
+    if (proc_size <= 1) {
+        printf("\nProcedure size was zero. Ret not set.\n");
         return ret;
     }
 
@@ -202,7 +202,7 @@ return_type deserialize(unsigned char * buffer){
         // Call function ptr to compute and return result
         ret = fp(recv_num_args, arg_list);
     } else {
-        printf("Could not find function in database. Ret not set.\n");
+        printf("\nCould not find function in database. Ret not set.\n");
     }
 
     return ret;
