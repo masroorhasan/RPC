@@ -35,6 +35,8 @@ struct proc_map_db {
 struct proc_map_db proc_db[100];
 int proc_db_index = 0;
 
+const int buffer_size = 512;
+
 /**
  * Creates and a new socket instance and returns socket identifier.
  */
@@ -230,13 +232,13 @@ void launch_server() {
     bind_socket(socket);
 
     int received_size;
-      unsigned char buffer[512];
+    unsigned char buffer[buffer_size];
 
     for (;;) {
         memset(buffer, 0, sizeof(buffer));
 
         // Populate buffer with data from client
-        received_size = recvfrom(socket, (void *)buffer, sizeof(buffer),
+        received_size = recvfrom(socket, (void *)buffer, buffer_size,
             0, (struct sockaddr *)&remote_addr, &addr_len);
 
         // If we recieved data from client, move onto deserializing it
@@ -256,7 +258,7 @@ void launch_server() {
                 k++;
             }
 
-            sendto(socket, send_buf, sizeof(send_buf), 0, (struct sockaddr *)&remote_addr, addr_len);
+            sendto(socket, send_buf, buffer_size, 0, (struct sockaddr *)&remote_addr, addr_len);
         }
     }
 }
