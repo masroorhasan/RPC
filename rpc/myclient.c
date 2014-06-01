@@ -27,16 +27,12 @@ int main() {
                                    10001, "addtwo1", 2,
                                    sizeof(int), (void *)(&a),
                                    sizeof(int), (void *)(&b));
-		printf("Client finished making unregistered function call.\n");
 
 
     ans = make_remote_call("ecelinux3.uwaterloo.ca",
                                    10001, "", 2,
                                    sizeof(int), (void *)(&a),
                                    sizeof(int), (void *)(&b));
-
-
-		printf("Client finished making no procedure name function call.\n");
 
 
     ans = make_remote_call("ecelinux3.uwaterloo.ca",
