@@ -1,4 +1,3 @@
-/* ECE 454 -- S'14, types and extern declarations for Assignment 1 */
 #include <stdbool.h>
 
 /* returnType */
