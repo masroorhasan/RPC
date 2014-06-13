@@ -1,2 +1,1 @@
-Masroor Hasan
-Warren Smith
+Remote procedure call (RPC) library that leverages UDP.
