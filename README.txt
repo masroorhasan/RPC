@@ -1,1 +1,1 @@
-Remote procedure call (RPC) library that leverages UDP.
+Remote procedure call (RPC) library that leverages a UDP connection.
